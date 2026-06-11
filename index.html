@@ -829,7 +829,7 @@
                                     {/* 振込先 */}
                                     {(profile.bankName || profile.bankNumber) && (
                                         <div style={{borderTop: '0.5px solid #cccccc', borderBottom: '0.5px solid #cccccc', padding: '14px 0', margin: '16px 0'}}>
-                                            <div style={{fontSize: '12px', color: '#666666', marginBottom: '10px'}}>下記口座へお振り込みをお願いいたします。</div>
+                                            <div style={{fontSize: '12px', color: '#666666', marginBottom: '10px'}}>*下記口座へ振込下さいますようお願い申し上げます。</div>
                                             <div style={{display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '5px 16px', fontSize: '13px'}}>
                                                 {profile.bankName && <><span style={{color: '#666666'}}>銀行名</span><span style={{fontWeight: '500', color: '#000000'}}>{profile.bankName}{profile.bankCode ? `（${profile.bankCode}）` : ''}</span></>}
                                                 {profile.branchName && <><span style={{color: '#666666'}}>支店名</span><span style={{fontWeight: '500', color: '#000000'}}>{profile.branchName}{profile.branchCode ? `（${profile.branchCode}）` : ''}</span></>}
@@ -837,7 +837,7 @@
                                                 {profile.bankNumber && <><span style={{color: '#666666'}}>口座番号</span><span style={{fontWeight: '500', color: '#000000'}}>{profile.bankNumber}</span></>}
                                                 {profile.bankHolder && <><span style={{color: '#666666'}}>口座名義</span><span style={{fontWeight: '500', color: '#000000'}}>{profile.bankHolder}</span></>}
                                             </div>
-                                            <div style={{fontSize: '10px', color: '#888888', marginTop: '10px'}}>※振込手数料につきましては御社のご負担にてお願い致します。</div>
+                                            <div style={{fontSize: '10px', color: '#888888', marginTop: '10px'}}>※*振込手数料につきましては御社のご負担にてお願い致します。</div>
                                         </div>
                                     )}
 
