@@ -709,12 +709,12 @@
 <div><label className="text-[10px] font-black uppercase tracking-widest block mb-2" style={{color: '#a06040'}}>対象月</label>
                                             <div className="flex items-center gap-3">
                                                 <input type="month" className="flex-1 p-3 border-2 rounded-xl font-bold outline-none" style={{
-                                                    background: sentMonths.includes(selectedMonth) ? '#d4edda' : '#fff4ed',
-                                                    borderColor: sentMonths.includes(selectedMonth) ? '#52b788' : '#f9d4b4',
-                                                    color: sentMonths.includes(selectedMonth) ? '#2d6a4f' : 'inherit'
+                                                    background: sentMonths.includes(selectedMonth) ? '#e8e8e8' : '#fff4ed',
+                                                    borderColor: sentMonths.includes(selectedMonth) ? '#aaaaaa' : '#f9d4b4',
+                                                    color: sentMonths.includes(selectedMonth) ? '#666666' : 'inherit'
                                                 }} value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} />
                                                 {selectedMonth && sentMonths.includes(selectedMonth) && (
-                                                    <span className="font-black text-sm px-3 py-1 rounded-full whitespace-nowrap" style={{background: '#d4edda', color: '#2d6a4f'}}>✅ 送信済</span>
+                                                    <span className="font-black text-sm px-3 py-1 rounded-full whitespace-nowrap" style={{background: '#e8e8e8', color: '#666666'}}>✅ 送信済</span>
                                                 )}
                                             </div>
                                         </div>
@@ -790,6 +790,7 @@
                                         <thead>
                                             <tr style={{borderBottom: '0.5px solid #cccccc'}}>
                                                 <th style={{fontSize: '12px', color: '#666666', fontWeight: '400', padding: '8px 4px', textAlign: 'left'}}>項目・内容</th>
+                                                <th style={{fontSize: '12px', color: '#666666', fontWeight: '400', padding: '8px 4px', textAlign: 'right'}}>数量</th>
                                                 <th style={{fontSize: '12px', color: '#666666', fontWeight: '400', padding: '8px 4px', textAlign: 'right'}}>単価（税抜）</th>
                                                 <th style={{fontSize: '12px', color: '#666666', fontWeight: '400', padding: '8px 4px', textAlign: 'right'}}>金額（税込）</th>
                                             </tr>
@@ -797,8 +798,9 @@
                                         <tbody>
                                             <tr style={{borderBottom: '0.5px solid #cccccc'}}>
                                                 <td style={{padding: '16px 4px', fontWeight: '500', color: '#000000', fontSize: '15px'}}>
-                                                    26年{parseInt(selectedMonth.split('-')[1])}月 運営協力費
+                                                    {selectedMonth.split('-')[0]}年{parseInt(selectedMonth.split('-')[1])}月 運営協力費
                                                 </td>
+                                                <td style={{padding: '16px 4px', textAlign: 'right', color: '#666666', fontSize: '15px'}}>1</td>
                                                 <td style={{padding: '16px 4px', textAlign: 'right', color: '#666666', fontSize: '15px'}}>
                                                     ¥{invoiceData.subTotal.toLocaleString()}
                                                 </td>
@@ -835,6 +837,7 @@
                                                 {profile.bankNumber && <><span style={{color: '#666666'}}>口座番号</span><span style={{fontWeight: '500', color: '#000000'}}>{profile.bankNumber}</span></>}
                                                 {profile.bankHolder && <><span style={{color: '#666666'}}>口座名義</span><span style={{fontWeight: '500', color: '#000000'}}>{profile.bankHolder}</span></>}
                                             </div>
+                                            <div style={{fontSize: '10px', color: '#888888', marginTop: '10px'}}>※振込手数料につきましては御社のご負担にてお願い致します。</div>
                                         </div>
                                     )}
 
