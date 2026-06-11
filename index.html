@@ -188,9 +188,9 @@
             const [timeByType, setTimeByType] = useState(() => {
                 const saved = localStorage.getItem('time_by_type_v1');
                 return saved ? JSON.parse(saved) : {
-                    フロント: { startH: '09', startM: '00', endH: '17', endM: '00' },
-                    カフェ:   { startH: '09', startM: '00', endH: '17', endM: '00' },
-                    物販:     { startH: '09', startM: '00', endH: '17', endM: '00' },
+                    フロント: { startH: '09', startM: '00', endH: '17', endM: '00', breakTime: '0' },
+                    カフェ:   { startH: '09', startM: '00', endH: '17', endM: '00', breakTime: '0' },
+                    物販:     { startH: '09', startM: '00', endH: '17', endM: '00', breakTime: '0' },
                 };
             });
 
@@ -495,9 +495,9 @@
                                                     {['カフェ', 'フロント', 'ツアー', '物販', '手入力'].map(t => (
                                                         <button key={t} onClick={() => {
                                                             if (['フロント','カフェ','物販'].includes(formData.type)) {
-                                                                setTimeByType(prev => ({...prev, [formData.type]: { startH: formData.startH, startM: formData.startM, endH: formData.endH, endM: formData.endM }}));
+                                                                setTimeByType(prev => ({...prev, [formData.type]: { startH: formData.startH, startM: formData.startM, endH: formData.endH, endM: formData.endM, breakTime: formData.breakTime }}));
                                                             }
-                                                            const savedTime = ['フロント','カフェ','物販'].includes(t) ? timeByType[t] : { startH: formData.startH, startM: formData.startM, endH: formData.endH, endM: formData.endM };
+                                                            const savedTime = ['フロント','カフェ','物販'].includes(t) ? timeByType[t] : { startH: formData.startH, startM: formData.startM, endH: formData.endH, endM: formData.endM, breakTime: '0' };
                                                             setFormData({...formData, type: t, ...savedTime});
                                                         }} className="flex-1 py-3 text-xs font-black rounded-xl transition" style={formData.type === t ? {background: 'white', color: '#e07840', boxShadow: '0 1px 4px rgba(0,0,0,0.1)'} : {color: '#a06040'}}>{t}</button>
                                                     ))}
@@ -528,7 +528,7 @@
                                             ) : (
                                                 <div>
                                                     <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#a06040'}}>休憩時間（分）</label>
-                                                    <input type="number" style={inputStyle} className={inputClass} value={formData.breakTime} onChange={(e) => setFormData({...formData, breakTime: e.target.value})} placeholder="0" />
+                                                    <input type="text" inputMode="numeric" pattern="[0-9]*" style={inputStyle} className={inputClass} value={formData.breakTime} onChange={(e) => setFormData({...formData, breakTime: e.target.value.replace(/[^0-9]/g, '')})} placeholder="0" />
                                                 </div>
                                             )}
                                         </div>
@@ -837,7 +837,7 @@
                                                 {profile.bankNumber && <><span style={{color: '#666666'}}>口座番号</span><span style={{fontWeight: '500', color: '#000000'}}>{profile.bankNumber}</span></>}
                                                 {profile.bankHolder && <><span style={{color: '#666666'}}>口座名義</span><span style={{fontWeight: '500', color: '#000000'}}>{profile.bankHolder}</span></>}
                                             </div>
-                                            <div style={{fontSize: '10px', color: '#888888', marginTop: '10px'}}>※*振込手数料につきましては御社のご負担にてお願い致します。</div>
+                                            <div style={{fontSize: '10px', color: '#888888', marginTop: '10px'}}>※振込手数料につきましては御社のご負担にてお願い致します。</div>
                                         </div>
                                     )}
 
