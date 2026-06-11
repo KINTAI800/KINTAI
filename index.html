@@ -100,7 +100,7 @@
             // マスト項目チェック
             const getMissingFields = () => {
                 const missing = [];
-                if (!profile.name) missing.push('氏名');
+                if (!profile.name) missing.push('氏名・屋号');
                 if (!profile.zip) missing.push('郵便番号');
                 if (!profile.address) missing.push('住所');
                 if (!profile.tel) missing.push('電話番号');
@@ -353,9 +353,9 @@
                                         <div>
                                             <h3 className="text-[10px] font-black uppercase tracking-widest mb-4" style={{color: '#e07840'}}>個人情報</h3>
                                             <div className="space-y-4">
-                                                {/* 氏名 */}
+                                                {/* 氏名・屋号 */}
                                                 <div>
-                                                    <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#a06040'}}>氏名</label>
+                                                    <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#a06040'}}>氏名・屋号</label>
                                                     <input type="text" style={inputStyle} className={inputClass} value={profile.name} onChange={(e) => setProfile({...profile, name: e.target.value})} placeholder="例：山田 花子" />
                                                 </div>
                                                 {/* 郵便番号 */}
@@ -483,9 +483,9 @@
                                                 {!isDateAllowed(formData.date) && <p className="text-[10px] mt-1" style={{color: 'red'}}>⚠️ 当月・先月のみ入力できます</p>}
                                             </div>
                                             <div>
-                                                <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#a06040'}}>氏名</label>
+                                                <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#a06040'}}>氏名・屋号</label>
                                                 <input type="text" style={inputStyle} className={inputClass} value={formData.name || profile.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder={profile.name || 'プロフィールから自動入力'} />
-                                                {!profile.name && <p className="text-[10px] mt-1" style={{color: '#e07840'}}>※ プロフィールに氏名を登録すると自動入力されます</p>}
+                                                {!profile.name && <p className="text-[10px] mt-1" style={{color: '#e07840'}}>※ プロフィールに氏名・屋号を登録すると自動入力されます</p>}
                                             </div>
                                         </div>
                                         <div className="space-y-6">
@@ -723,7 +723,7 @@
                                             <input type="url" className="w-full p-3 border-2 rounded-xl font-bold outline-none text-xs" style={{background: '#fff4ed', borderColor: '#f9d4b4'}} defaultValue={GAS_URL} onChange={(e) => localStorage.setItem('gas_url', e.target.value)} placeholder="https://script.google.com/macros/s/..." />
                                         </div>
                                     </div>
-                                    {!profile.name && <p className="text-xs font-bold mt-3" style={{color: '#f09060'}}>⚠ プロフィールに氏名を登録してください</p>}
+                                    {!profile.name && <p className="text-xs font-bold mt-3" style={{color: '#f09060'}}>⚠ プロフィールに氏名・屋号を登録してください</p>}
                                     {getMissingFields().length > 0 && (
                                         <p className="text-xs font-bold mt-2" style={{color: '#e05050'}}>⚠ 未登録：{getMissingFields().join('・')}</p>
                                     )}
