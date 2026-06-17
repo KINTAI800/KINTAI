@@ -384,11 +384,11 @@
                                                 {/* 郵便番号 */}
                                                 <div>
                                                     <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#a06040'}}>郵便番号</label>
-                                                    <div className="flex gap-3 items-center">
+                                                    <div className="flex gap-2 items-center">
                                                         <input
                                                             type="text"
                                                             style={inputStyle}
-                                                            className={inputClass}
+                                                            className={inputClass + ' flex-1'}
                                                             value={profile.zip}
                                                             onChange={(e) => setProfile({...profile, zip: e.target.value})}
                                                             placeholder="例：123-4567"
@@ -414,8 +414,8 @@
                                                                 }
                                                                 setTimeout(() => setZipStatus(''), 3000);
                                                             }}
-                                                            className="whitespace-nowrap px-5 py-3 rounded-2xl text-sm font-black text-white transition active:scale-95 save-btn"
-                                                            style={{minWidth: '90px'}}
+                                                            className="whitespace-nowrap px-3 py-3 rounded-2xl text-xs font-black text-white transition active:scale-95 save-btn"
+                                                            style={{minWidth: '72px', flexShrink: 0}}
                                                         >
                                                             {zipStatus === 'loading' ? '検索中…' : zipStatus === 'ok' ? '✓ OK' : zipStatus === 'err' ? '❌ 未発見' : '住所を検索'}
                                                         </button>
@@ -435,7 +435,7 @@
                                                 {/* インボイス登録番号 */}
                                                 <div>
                                                     <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#a06040'}}>インボイス登録番号（任意）</label>
-                                                    <input type="text" style={inputStyle} className={inputClass} value={profile.invoiceNo || ''} onChange={(e) => setProfile({...profile, invoiceNo: e.target.value})} placeholder="例：T1234567890123" />
+                                                    <input type="text" style={{...inputStyle, padding: '8px 12px', fontSize: '12px'}} className="w-full border-2 rounded-2xl font-bold outline-none transition" value={profile.invoiceNo || ''} onChange={(e) => setProfile({...profile, invoiceNo: e.target.value})} placeholder="例：T1234567890123" />
                                                 </div>
                                             </div>
                                         </div>
