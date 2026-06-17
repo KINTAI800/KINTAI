@@ -24,16 +24,17 @@
                 padding: 20px 16px !important;
             }
             #invoice-box.invoice-screen .inv-title { font-size: 26px !important; }
-            #invoice-box.invoice-screen .inv-to-name { font-size: 16px !important; }
+            #invoice-box.invoice-screen .inv-to-name { font-size: 15px !important; white-space: nowrap !important; }
             #invoice-box.invoice-screen .inv-from-name { font-size: 13px !important; }
             #invoice-box.invoice-screen .inv-from-detail { font-size: 11px !important; }
             #invoice-box.invoice-screen .inv-label { font-size: 10px !important; }
             #invoice-box.invoice-screen .inv-req-label { font-size: 12px !important; }
             #invoice-box.invoice-screen .inv-req-amt { font-size: 20px !important; }
             #invoice-box.invoice-screen .inv-row { gap: 12px !important; }
-            #invoice-box.invoice-screen table { font-size: 11px !important; }
-            #invoice-box.invoice-screen th { font-size: 10px !important; padding: 6px 2px !important; }
-            #invoice-box.invoice-screen td { font-size: 12px !important; padding: 10px 2px !important; }
+            #invoice-box.invoice-screen table { font-size: 10.5px !important; width: 100% !important; }
+            #invoice-box.invoice-screen th { font-size: 9px !important; padding: 6px 2px !important; }
+            #invoice-box.invoice-screen td { font-size: 10.5px !important; padding: 10px 2px !important; }
+            #invoice-box.invoice-screen th:first-child, #invoice-box.invoice-screen td:first-child { white-space: nowrap !important; }
             #invoice-box.invoice-screen .inv-bank-grid { font-size: 11px !important; grid-template-columns: 64px 1fr !important; }
             #invoice-box.invoice-screen .inv-footer { font-size: 10px !important; }
         }
@@ -668,25 +669,25 @@
 
                         {/* ===== 詳細確認 ===== */}
                         {currentView === 'detail' && (
-                            <div className="space-y-6">
-                                <div className="p-8 rounded-3xl shadow-xl no-print" style={{background: '#fffaf7', border: '1px solid #f9d4b4'}}>
-                                    <h2 className="text-xs font-black uppercase tracking-widest mb-6" style={{color: '#a06040'}}>勤務詳細確認（月別）</h2>
-                                    <div className="grid grid-cols-2 gap-6">
+                            <div className="space-y-4">
+                                <div className="p-5 md:p-8 rounded-3xl shadow-xl no-print" style={{background: '#fffaf7', border: '1px solid #f9d4b4'}}>
+                                    <h2 className="text-xs font-black uppercase tracking-widest mb-4 md:mb-6" style={{color: '#a06040'}}>勤務詳細確認（月別）</h2>
+                                    <div className="grid grid-cols-2 gap-3 md:gap-6">
                                         <div>
-                                            <label className="text-[10px] font-black uppercase mb-2 block tracking-widest" style={{color: '#a06040'}}>氏名・屋号</label>
-                                            <div className="p-4 rounded-2xl border-2 font-bold" style={{background: '#fff4ed', borderColor: '#f9d4b4', color: '#7c3d1a'}}>
-                                                {profile.name || '（プロフィール未登録）'}
+                                            <label className="text-[9px] md:text-[10px] font-black uppercase mb-2 block tracking-widest" style={{color: '#a06040'}}>氏名・屋号</label>
+                                            <div className="p-3 md:p-4 rounded-2xl border-2 font-bold text-sm md:text-base whitespace-nowrap overflow-hidden text-ellipsis" style={{background: '#fff4ed', borderColor: '#f9d4b4', color: '#7c3d1a'}}>
+                                                {profile.name || '（未登録）'}
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-black uppercase mb-2 block tracking-widest" style={{color: '#a06040'}}>対象月</label>
-                                            <input type="month" className="w-full p-4 border-2 rounded-2xl font-bold outline-none" style={{background: '#fff4ed', borderColor: '#f9d4b4'}} value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} />
-
+                                            <label className="text-[9px] md:text-[10px] font-black uppercase mb-2 block tracking-widest" style={{color: '#a06040'}}>対象月</label>
+                                            <input type="month" className="w-full p-3 md:p-4 border-2 rounded-2xl font-bold outline-none text-sm md:text-base" style={{background: '#fff4ed', borderColor: '#f9d4b4'}} value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} />
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="p-8 rounded-3xl shadow-lg overflow-hidden" style={{background: '#fffaf7', border: '1px solid #f9d4b4'}}>
+                                {/* PC：テーブル表示 / スマホ：カード表示 */}
+                                <div className="hidden md:block p-8 rounded-3xl shadow-lg overflow-hidden" style={{background: '#fffaf7', border: '1px solid #f9d4b4'}}>
                                     <table className="w-full">
                                         <thead>
                                             <tr className="border-b-2 text-left text-[10px] uppercase font-black" style={{borderColor: '#f9d4b4', color: '#a06040'}}>
@@ -713,6 +714,32 @@
                                         <span className="text-xs font-black uppercase tracking-widest">月間合計実績</span>
                                         <span className="text-2xl font-black italic">¥{invoiceData.totalAmount.toLocaleString()}</span>
                                     </div>
+                                </div>
+
+                                <div className="md:hidden space-y-2">
+                                    {invoiceData.filtered.length === 0 ? (
+                                        <div className="p-12 text-center font-bold rounded-3xl" style={{background: '#fffaf7', border: '1px solid #f9d4b4', color: '#f9c8a0'}}>データがありません</div>
+                                    ) : invoiceData.filtered.map(r => (
+                                        <div key={r.id} className="p-4 rounded-2xl shadow-sm" style={{background: '#fffaf7', border: '1px solid #f9d4b4'}}>
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-sm" style={{color: '#7c3d1a'}}>{r.date.split('-').slice(1).join('/')}</span>
+                                                    <span className={`font-black px-2 py-0.5 rounded-full text-[11px] ${r.type === 'ツアー' ? 'tag-tour' : 'tag-work'}`}>{r.type}</span>
+                                                </div>
+                                                <span className="font-black text-lg" style={{color: '#7c3d1a'}}>¥{r.amount.toLocaleString()}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center mt-1.5">
+                                                <span className="text-xs" style={{color: '#e07840'}}>{r.type === 'ツアー' ? 'ツアーガイド' : r.type === '手入力' ? (r.manualLabel || '手入力') : `${r.startTime}〜${r.endTime}`}</span>
+                                                <span className="text-xs font-mono font-bold" style={{color: '#a06040'}}>{r.type === 'ツアー' ? `${r.guests}名` : r.type === '手入力' ? '1' : `${r.hours || 1}h`}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {invoiceData.filtered.length > 0 && (
+                                        <div className="total-bar text-white p-5 rounded-2xl flex justify-between items-center mt-3">
+                                            <span className="text-xs font-black uppercase tracking-widest">月間合計実績</span>
+                                            <span className="text-xl font-black italic">¥{invoiceData.totalAmount.toLocaleString()}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
