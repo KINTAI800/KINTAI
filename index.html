@@ -35,6 +35,10 @@
             #invoice-box.invoice-screen th { font-size: 9px !important; padding: 6px 2px !important; }
             #invoice-box.invoice-screen td { font-size: 10.5px !important; padding: 10px 2px !important; }
             #invoice-box.invoice-screen th:first-child, #invoice-box.invoice-screen td:first-child { white-space: nowrap !important; }
+            #invoice-box.invoice-screen .inv-to-note { font-size: 10.5px !important; white-space: nowrap !important; }
+            #invoice-box.invoice-screen .inv-summary-row { font-size: 10.5px !important; }
+            #invoice-box.invoice-screen .inv-summary-total { font-size: 11px !important; }
+            #invoice-box.invoice-screen .inv-bank-note { font-size: 10.5px !important; }
             #invoice-box.invoice-screen .inv-bank-grid { font-size: 11px !important; grid-template-columns: 64px 1fr !important; }
             #invoice-box.invoice-screen .inv-footer { font-size: 10px !important; }
         }
@@ -811,7 +815,7 @@
                                         <div>
                                             <div className="inv-label" style={{fontSize: '12px', color: '#666666', marginBottom: '4px'}}>請求先</div>
                                             <div className="inv-to-name" style={{fontSize: '22px', fontWeight: '500', color: '#000000'}}>株式会社イジュン 御中</div>
-                                            <div style={{fontSize: '13px', color: '#666666', marginTop: '10px'}}>下記の通り、ご請求申し上げます。</div>
+                                            <div className="inv-to-note" style={{fontSize: '13px', color: '#666666', marginTop: '10px'}}>下記の通り、ご請求申し上げます。</div>
                                         </div>
                                         <div style={{textAlign: 'right'}}>
                                             <div className="inv-label" style={{fontSize: '12px', color: '#666666', marginBottom: '4px'}}>請求人</div>
@@ -859,13 +863,13 @@
                                     {/* 小計・消費税・合計 */}
                                     <div style={{display: 'flex', justifyContent: 'flex-end', margin: '8px 0 20px'}}>
                                         <div style={{width: '220px'}}>
-                                            <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#666666', padding: '4px 0'}}>
+                                            <div className="inv-summary-row" style={{display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#666666', padding: '4px 0'}}>
                                                 <span>小計（税抜）</span><span>¥{invoiceData.subTotal.toLocaleString()}</span>
                                             </div>
-                                            <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#666666', padding: '4px 0'}}>
+                                            <div className="inv-summary-row" style={{display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#666666', padding: '4px 0'}}>
                                                 <span>消費税（10%）</span><span>¥{invoiceData.tax.toLocaleString()}</span>
                                             </div>
-                                            <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '15px', fontWeight: '500', color: '#000000', borderTop: '0.5px solid #cccccc', padding: '10px 0', marginTop: '4px'}}>
+                                            <div className="inv-summary-total" style={{display: 'flex', justifyContent: 'space-between', fontSize: '15px', fontWeight: '500', color: '#000000', borderTop: '0.5px solid #cccccc', padding: '10px 0', marginTop: '4px'}}>
                                                 <span>合計（税込）</span><span>¥{invoiceData.totalAmount.toLocaleString()}</span>
                                             </div>
                                         </div>
@@ -874,7 +878,7 @@
                                     {/* 振込先 */}
                                     {(profile.bankName || profile.bankNumber) && (
                                         <div style={{borderTop: '0.5px solid #cccccc', borderBottom: '0.5px solid #cccccc', padding: '14px 0', margin: '16px 0'}}>
-                                            <div style={{fontSize: '12px', color: '#666666', marginBottom: '10px'}}>お手数ですが下記口座へお振り込みをお願い申し上げます。</div>
+                                            <div className="inv-bank-note" style={{fontSize: '12px', color: '#666666', marginBottom: '10px'}}>お手数ですが下記口座へお振り込みをお願い申し上げます。</div>
                                             <div className="inv-bank-grid" style={{display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '5px 16px', fontSize: '13px'}}>
                                                 {profile.bankName && <><span style={{color: '#666666'}}>銀行名</span><span style={{fontWeight: '500', color: '#000000'}}>{profile.bankName}{profile.bankCode ? `（${profile.bankCode}）` : ''}</span></>}
                                                 {profile.branchName && <><span style={{color: '#666666'}}>支店名</span><span style={{fontWeight: '500', color: '#000000'}}>{profile.branchName}{profile.branchCode ? `（${profile.branchCode}）` : ''}</span></>}
