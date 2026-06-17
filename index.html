@@ -30,8 +30,7 @@
             #invoice-box.invoice-screen .inv-label { font-size: 10px !important; }
             #invoice-box.invoice-screen .inv-req-label { font-size: 12px !important; }
             #invoice-box.invoice-screen .inv-req-amt { font-size: 20px !important; }
-            #invoice-box.invoice-screen .inv-row { flex-direction: column !important; gap: 12px !important; }
-            #invoice-box.invoice-screen .inv-row > div:last-child { text-align: left !important; }
+            #invoice-box.invoice-screen .inv-row { gap: 12px !important; }
             #invoice-box.invoice-screen table { font-size: 11px !important; }
             #invoice-box.invoice-screen th { font-size: 10px !important; padding: 6px 2px !important; }
             #invoice-box.invoice-screen td { font-size: 12px !important; padding: 10px 2px !important; }
@@ -872,13 +871,13 @@
                                     <button
                                         onClick={handleSendInvoice}
                                         disabled={sendStatus === 'sending'}
-                                        className="w-full py-5 rounded-3xl font-black text-lg shadow-xl transition transform hover:-translate-y-1"
+                                        className="w-full py-5 rounded-3xl font-black text-sm md:text-lg shadow-xl transition transform hover:-translate-y-1 whitespace-nowrap overflow-hidden text-ellipsis px-2"
                                         style={{
                                             background: sendStatus === 'ok' ? '#5b9e6e' : sendStatus === 'error' ? '#e05050' : 'linear-gradient(135deg, #3a7bd5, #5a9ee0)',
                                             color: 'white'
                                         }}
                                     >
-                                        {sendStatus === 'sending' ? '📤 送信中…' : sendStatus === 'ok' ? '✓ 送信完了！野田さんに提出済。' : sendStatus === 'error' ? '❌ 送信失敗（URLを確認してね）' : '📤 業務委託請求書（PDF）を送信する'}
+                                        {sendStatus === 'sending' ? '📤 送信中…' : sendStatus === 'ok' ? '✓ 送信完了しました' : sendStatus === 'error' ? '❌ 送信失敗（URLを確認してね）' : '📤 業務委託請求書（PDF）を送信する'}
                                     </button>
 
                                     {/* 印刷リンク */}
