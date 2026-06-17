@@ -19,6 +19,25 @@
             --bg-card: #fffaf7;
             --border: #f9d4b4;
         }
+        @media screen and (max-width: 640px) {
+            #invoice-box.invoice-screen {
+                padding: 20px 16px !important;
+            }
+            #invoice-box.invoice-screen .inv-title { font-size: 26px !important; }
+            #invoice-box.invoice-screen .inv-to-name { font-size: 16px !important; }
+            #invoice-box.invoice-screen .inv-from-name { font-size: 13px !important; }
+            #invoice-box.invoice-screen .inv-from-detail { font-size: 11px !important; }
+            #invoice-box.invoice-screen .inv-label { font-size: 10px !important; }
+            #invoice-box.invoice-screen .inv-req-label { font-size: 12px !important; }
+            #invoice-box.invoice-screen .inv-req-amt { font-size: 20px !important; }
+            #invoice-box.invoice-screen .inv-row { flex-direction: column !important; gap: 12px !important; }
+            #invoice-box.invoice-screen .inv-row > div:last-child { text-align: left !important; }
+            #invoice-box.invoice-screen table { font-size: 11px !important; }
+            #invoice-box.invoice-screen th { font-size: 10px !important; padding: 6px 2px !important; }
+            #invoice-box.invoice-screen td { font-size: 12px !important; padding: 10px 2px !important; }
+            #invoice-box.invoice-screen .inv-bank-grid { font-size: 11px !important; grid-template-columns: 64px 1fr !important; }
+            #invoice-box.invoice-screen .inv-footer { font-size: 10px !important; }
+        }
         @media print {
             .no-print { display: none !important; }
             body { background: white !important; margin: 0; padding: 0; }
@@ -745,16 +764,16 @@
                                 <>
 
                                 {/* 請求書本体（印刷対象） */}
-                                <div id="invoice-box" className="bg-white text-black" style={{border: '1px solid #cccccc', padding: '40px 48px', boxShadow: '0 4px 24px rgba(0,0,0,0.08)', minHeight: '297mm'}}>
+                                <div id="invoice-box" className="bg-white text-black invoice-screen" style={{border: '1px solid #cccccc', padding: '40px 48px', boxShadow: '0 4px 24px rgba(0,0,0,0.08)', minHeight: '297mm'}}>
 
                                     {/* タイトル行 */}
                                     <div className="flex justify-between items-start" style={{marginBottom: '16px'}}>
                                         <div>
-                                            <div style={{fontSize: '36px', fontWeight: '500', color: '#000000', lineHeight: '1.1'}}>請求書</div>
+                                            <div className="inv-title" style={{fontSize: '36px', fontWeight: '500', color: '#000000', lineHeight: '1.1'}}>請求書</div>
                                             <div style={{fontSize: '12px', color: '#666666', marginTop: '3px'}}>INVOICE</div>
                                         </div>
                                         <div style={{textAlign: 'right'}}>
-                                            <div style={{fontSize: '12px', color: '#666666', marginBottom: '3px'}}>発行日</div>
+                                            <div className="inv-label" style={{fontSize: '12px', color: '#666666', marginBottom: '3px'}}>発行日</div>
                                             <div style={{fontSize: '14px', fontWeight: '500', color: '#000000'}}>{new Date().toLocaleDateString('ja-JP')}</div>
                                         </div>
                                     </div>
@@ -762,26 +781,26 @@
                                     <hr style={{border: 'none', borderTop: '0.5px solid #cccccc', margin: '16px 0'}} />
 
                                     {/* 請求先・請求人 */}
-                                    <div className="flex justify-between" style={{marginBottom: '20px'}}>
+                                    <div className="flex justify-between inv-row" style={{marginBottom: '20px'}}>
                                         <div>
-                                            <div style={{fontSize: '12px', color: '#666666', marginBottom: '4px'}}>請求先</div>
-                                            <div style={{fontSize: '22px', fontWeight: '500', color: '#000000'}}>株式会社イジュン 御中</div>
+                                            <div className="inv-label" style={{fontSize: '12px', color: '#666666', marginBottom: '4px'}}>請求先</div>
+                                            <div className="inv-to-name" style={{fontSize: '22px', fontWeight: '500', color: '#000000'}}>株式会社イジュン 御中</div>
                                             <div style={{fontSize: '13px', color: '#666666', marginTop: '10px'}}>下記の通り、ご請求申し上げます。</div>
                                         </div>
                                         <div style={{textAlign: 'right'}}>
-                                            <div style={{fontSize: '12px', color: '#666666', marginBottom: '4px'}}>請求人</div>
-                                            <div style={{fontSize: '16px', fontWeight: '500', color: '#000000'}}>{profile.name || '（未登録）'}</div>
-                                            {profile.zip && <div style={{fontSize: '13px', color: '#666666'}}>〒{profile.zip}</div>}
-                                            {profile.address && <div style={{fontSize: '13px', color: '#666666'}}>{profile.address}</div>}
-                                            {profile.tel && <div style={{fontSize: '13px', color: '#666666'}}>TEL: {profile.tel}</div>}
-                                            {profile.invoiceNo && <div style={{fontSize: '13px', color: '#666666'}}>登録番号: {profile.invoiceNo}</div>}
+                                            <div className="inv-label" style={{fontSize: '12px', color: '#666666', marginBottom: '4px'}}>請求人</div>
+                                            <div className="inv-from-name" style={{fontSize: '16px', fontWeight: '500', color: '#000000'}}>{profile.name || '（未登録）'}</div>
+                                            {profile.zip && <div className="inv-from-detail" style={{fontSize: '13px', color: '#666666'}}>〒{profile.zip}</div>}
+                                            {profile.address && <div className="inv-from-detail" style={{fontSize: '13px', color: '#666666'}}>{profile.address}</div>}
+                                            {profile.tel && <div className="inv-from-detail" style={{fontSize: '13px', color: '#666666'}}>TEL: {profile.tel}</div>}
+                                            {profile.invoiceNo && <div className="inv-from-detail" style={{fontSize: '13px', color: '#666666'}}>登録番号: {profile.invoiceNo}</div>}
                                         </div>
                                     </div>
 
                                     {/* ご請求金額 */}
                                     <div style={{display: 'flex', alignItems: 'baseline', gap: '20px', padding: '14px 0 10px', marginTop: '8px'}}>
-                                        <span style={{fontSize: '15px', fontWeight: '500', color: '#000000'}}>ご請求金額（税込）</span>
-                                        <span style={{fontSize: '26px', fontWeight: '500', color: '#000000', letterSpacing: '-0.5px'}}>¥{invoiceData.totalAmount.toLocaleString()}-</span>
+                                        <span className="inv-req-label" style={{fontSize: '15px', fontWeight: '500', color: '#000000'}}>ご請求金額（税込）</span>
+                                        <span className="inv-req-amt" style={{fontSize: '26px', fontWeight: '500', color: '#000000', letterSpacing: '-0.5px'}}>¥{invoiceData.totalAmount.toLocaleString()}-</span>
                                     </div>
                                     <hr style={{border: 'none', borderTop: '2px solid #000000', margin: '0 0 16px'}} />
 
@@ -830,19 +849,19 @@
                                     {(profile.bankName || profile.bankNumber) && (
                                         <div style={{borderTop: '0.5px solid #cccccc', borderBottom: '0.5px solid #cccccc', padding: '14px 0', margin: '16px 0'}}>
                                             <div style={{fontSize: '12px', color: '#666666', marginBottom: '10px'}}>お手数ですが下記口座へお振り込みをお願い申し上げます。</div>
-                                            <div style={{display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '5px 16px', fontSize: '13px'}}>
+                                            <div className="inv-bank-grid" style={{display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '5px 16px', fontSize: '13px'}}>
                                                 {profile.bankName && <><span style={{color: '#666666'}}>銀行名</span><span style={{fontWeight: '500', color: '#000000'}}>{profile.bankName}{profile.bankCode ? `（${profile.bankCode}）` : ''}</span></>}
                                                 {profile.branchName && <><span style={{color: '#666666'}}>支店名</span><span style={{fontWeight: '500', color: '#000000'}}>{profile.branchName}{profile.branchCode ? `（${profile.branchCode}）` : ''}</span></>}
                                                 {profile.bankType && <><span style={{color: '#666666'}}>口座種別</span><span style={{fontWeight: '500', color: '#000000'}}>{profile.bankType}</span></>}
                                                 {profile.bankNumber && <><span style={{color: '#666666'}}>口座番号</span><span style={{fontWeight: '500', color: '#000000'}}>{profile.bankNumber}</span></>}
                                                 {profile.bankHolder && <><span style={{color: '#666666'}}>口座名義</span><span style={{fontWeight: '500', color: '#000000'}}>{profile.bankHolder}</span></>}
                                             </div>
-                                            <div style={{fontSize: '10px', color: '#888888', marginTop: '10px'}}>※振込手数料につきましては御社のご負担にてお願い致します。</div>
+                                            <div className="inv-footer" style={{fontSize: '10px', color: '#888888', marginTop: '10px'}}>※振込手数料につきましては御社のご負担にてお願い致します。</div>
                                         </div>
                                     )}
 
                                     {/* 一言メッセージ */}
-                                    <div style={{textAlign: 'center', fontSize: '12px', color: '#666666', marginTop: '16px'}}>
+                                    <div className="inv-footer" style={{textAlign: 'center', fontSize: '12px', color: '#666666', marginTop: '16px'}}>
                                         今後とも何卒よろしくお願いいたします。
                                     </div>
 
