@@ -10,14 +10,14 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'M PLUS Rounded 1c', sans-serif; background: #fff4ed; }
+        body { font-family: 'M PLUS Rounded 1c', sans-serif; background: #f3faf6; }
         :root {
-            --accent: #e07840;
-            --accent-light: #f9d4b4;
-            --accent-dark: #c05c20;
-            --bg-warm: #fff4ed;
-            --bg-card: #fffaf7;
-            --border: #f9d4b4;
+            --accent: #8fc7a8;
+            --accent-light: #cfe9da;
+            --accent-dark: #5a9c79;
+            --bg-warm: #f3faf6;
+            --bg-card: #fbfdfc;
+            --border: #cfe9da;
         }
         @media screen and (max-width: 640px) {
             #invoice-box.invoice-screen {
@@ -66,13 +66,13 @@
             50% { transform: scale(1.02); }
             100% { transform: scale(1); }
         }
-        .nav-btn-active { background: linear-gradient(135deg, #e07840, #f09060); color: white; }
-        .save-btn { background: linear-gradient(135deg, #e07840, #f09060); }
-        .save-btn:hover { background: linear-gradient(135deg, #c05c20, #e07840); }
-        .header-bg { background: linear-gradient(135deg, #e07840, #f0a060); }
-        .total-bar { background: linear-gradient(135deg, #c05c20, #e07840); }
-        .tag-tour { background: #fff4ed; color: #7c3d1a; }
-        .tag-work { background: #fde8d0; color: #c05c20; }
+        .nav-btn-active { background: linear-gradient(135deg, #5a9c79, #8fc7a8); color: white; }
+        .save-btn { background: linear-gradient(135deg, #5a9c79, #7fc8a3); }
+        .save-btn:hover { background: linear-gradient(135deg, #5a9c79, #8fc7a8); }
+        .header-bg { background: linear-gradient(135deg, #a8d6bc, #bfe3cd); }
+        .total-bar { background: linear-gradient(135deg, #5a9c79, #8fc7a8); }
+        .tag-tour { background: #f3faf6; color: #3d6e54; }
+        .tag-work { background: #dcefe2; color: #5a9c79; }
     </style>
 </head>
 <body>
@@ -81,7 +81,7 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
         const HOURLY_RATE = 1200;
-        const TOUR_RATE_PER_PERSON = 1000;
+        const TOUR_RATES = { 'レイビレッジツアー': 1000, '素戔嗚散歩': 2000 };
         const BANK_TYPES = ['普通', '当座'];
         const HOURS = Array.from({ length: 18 }, (_, i) => String(i + 6).padStart(2, '0'));
         const MINUTES = ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'];
@@ -96,11 +96,13 @@
 
             const [profile, setProfile] = useState(() => {
                 const saved = localStorage.getItem('staff_profile_v1');
-                return saved ? JSON.parse(saved) : {
+                const defaults = {
                     name: '', zip: '', address: '', tel: '', invoiceNo: '',
                     bankName: '', bankCode: '', branchName: '', branchCode: '',
-                    bankType: '普通', bankNumber: '', bankHolder: ''
+                    bankType: '普通', bankNumber: '', bankHolder: '',
+                    isCafeOnly: false
                 };
+                return saved ? {...defaults, ...JSON.parse(saved)} : defaults;
             });
             const [profileSaved, setProfileSaved] = useState(false);
             const [zipStatus, setZipStatus] = useState('');
@@ -114,6 +116,28 @@
                 localStorage.setItem('sent_months_v1', JSON.stringify(sentMonths));
             }, [sentMonths]);
             const [confirmDialog, setConfirmDialog] = useState(null); // {message, onOk}
+            const [approvedIds, setApprovedIds] = useState(() => {
+                const saved = localStorage.getItem('approved_ids_v1');
+                return saved ? JSON.parse(saved) : [];
+            });
+            useEffect(() => {
+                localStorage.setItem('approved_ids_v1', JSON.stringify(approvedIds));
+            }, [approvedIds]);
+            const [pwDialog, setPwDialog] = useState(null); // {message, onOk}
+            const [pwInput, setPwInput] = useState('');
+            const [pwError, setPwError] = useState(false);
+
+            // その月のパスワード（例：6月なら ok6）。日付(YYYY-MM-DD)から月番号を取り出す
+            const getMonthPassword = (dateStr) => {
+                const m = parseInt((dateStr || '').split('-')[1] || (new Date().getMonth() + 1), 10);
+                return 'ok' + m;
+            };
+
+            const askPassword = (dateStr, message, onOk) => {
+                setPwInput('');
+                setPwError(false);
+                setPwDialog({ message, onOk, correctPw: getMonthPassword(dateStr) });
+            };
             const GAS_URL = localStorage.getItem('gas_url') || '';
 
             const showConfirm = (message, onOk, isDanger = false, okLabel = '送信する') => {
@@ -145,6 +169,10 @@
                 }
                 if (invoiceData.filtered.length === 0) {
                     alert('送信するデータがありません。');
+                    return;
+                }
+                if (hasUnapprovedTour) {
+                    alert('ツアーの記録に未承認のものがあります。\n履歴タブで、まっちゃんの承認を受けてから送信してください。');
                     return;
                 }
 
@@ -186,7 +214,8 @@
                             branchName:  profile.branchName,
                             bankType:    profile.bankType,
                             bankNumber:  profile.bankNumber,
-                            bankHolder:  profile.bankHolder
+                            bankHolder:  profile.bankHolder,
+                            isCafeOnly:  !!profile.isCafeOnly
                         };
 
                         try {
@@ -225,6 +254,7 @@
                 endH: '17', endM: '00',
                 breakTime: '0',
                 tourGuests: '1',
+                tourType: 'レイビレッジツアー',
                 manualAmount: '0'
             });
 
@@ -232,6 +262,7 @@
                 const now = new Date();
                 return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
             });
+            const [historyShowAll, setHistoryShowAll] = useState(false); // 履歴タブの「全件」表示フラグ（このタブ専用）
 
             useEffect(() => {
                 localStorage.setItem('staff_profile_v1', JSON.stringify(profile));
@@ -252,6 +283,13 @@
                 }
             }, [profile.name]);
 
+            // カフェ専従モードがONなら、勤務形態を自動でカフェに固定
+            useEffect(() => {
+                if (profile.isCafeOnly) {
+                    setFormData(f => f.type === 'カフェ' ? f : ({...f, type: 'カフェ', ...timeByType['カフェ']}));
+                }
+            }, [profile.isCafeOnly]);
+
             const handleSaveProfile = () => {
                 setProfileSaved(true);
                 setTimeout(() => setProfileSaved(false), 2000);
@@ -260,7 +298,8 @@
             const currentCalculation = useMemo(() => {
                 if (formData.type === 'ツアー') {
                     const count = parseInt(formData.tourGuests || 0);
-                    return { hours: null, guests: count, amount: count * TOUR_RATE_PER_PERSON };
+                    const rate = TOUR_RATES[formData.tourType || 'レイビレッジツアー'];
+                    return { hours: null, guests: count, amount: count * rate };
                 } else if (formData.type === '手入力') {
                     return { hours: null, guests: null, amount: parseInt(formData.manualAmount || 0) };
                 } else {
@@ -289,6 +328,7 @@
                     breakTime: (formData.type === 'ツアー' || formData.type === '手入力') ? '0' : formData.breakTime,
                     hours: calc.hours,
                     guests: calc.guests,
+                    tourType: formData.type === 'ツアー' ? (formData.tourType || 'レイビレッジツアー') : '',
                     amount: calc.amount,
                     manualLabel: formData.type === '手入力' ? (formData.manualLabel || '') : ''
                 };
@@ -312,6 +352,11 @@
                 };
             }, [records, selectedMonth]);
 
+            // 対象月に「未承認のツアー」が含まれているか
+            const hasUnapprovedTour = useMemo(() => {
+                return invoiceData.filtered.some(r => r.type === 'ツアー' && !approvedIds.includes(r.id));
+            }, [invoiceData, approvedIds]);
+
             // 当月・先月のみ入力可能
             const getAllowedMonths = () => {
                 const now = new Date();
@@ -327,8 +372,8 @@
                 return getAllowedMonths().includes(month);
             };
 
-            const inputClass = "w-full p-4 border-2 rounded-2xl font-bold outline-none transition focus:border-[#e07840]";
-            const inputStyle = { background: '#fff4ed', borderColor: '#f9d4b4' };
+            const inputClass = "w-full p-4 border-2 rounded-2xl font-bold outline-none transition focus:border-[#8fc7a8]";
+            const inputStyle = { background: '#f3faf6', borderColor: '#cfe9da' };
             const inputFocusStyle = {};
 
             const navItems = [
@@ -340,9 +385,9 @@
             ];
 
             return (
-                <div className="min-h-screen pb-24" style={{background: '#fff4ed'}}>
+                <div className="min-h-screen pb-24" style={{background: '#f3faf6'}}>
                     {/* Header */}
-                    <header className="header-bg text-white p-4 shadow-lg sticky top-0 z-20 no-print">
+                    <header className="header-bg p-4 shadow-lg sticky top-0 z-20 no-print" style={{color: '#2d5440'}}>
                         <div className="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
                             <div>
                                 <h1 className="text-xl font-black tracking-tight">勤怠管理・請求システム</h1>
@@ -353,7 +398,8 @@
                                     <button
                                         key={v.id}
                                         onClick={() => setCurrentView(v.id)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${currentView === v.id ? 'nav-btn-active' : 'text-white/60 hover:text-white'}`}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${currentView === v.id ? 'nav-btn-active' : ''}`}
+                                        style={currentView === v.id ? {} : {color: 'rgba(45,84,64,0.55)'}}
                                     >
                                         {v.label}
                                     </button>
@@ -367,23 +413,38 @@
                         {/* ===== プロフィール ===== */}
                         {currentView === 'profile' && (
                             <div className="space-y-6">
-                                <div className="rounded-3xl shadow-xl overflow-hidden" style={{background: '#fffaf7', border: '1px solid #f9d4b4'}}>
-                                    <div className="px-8 py-6 border-b" style={{background: '#fdeede', borderColor: '#f9d4b4'}}>
-                                        <h2 className="font-black text-sm uppercase tracking-widest" style={{color: '#7c3d1a'}}>個人情報・振込先登録</h2>
-                                        <p className="text-xs mt-1" style={{color: '#e07840'}}>ここに入力した情報が請求書に自動反映されます</p>
+                                <div className="rounded-3xl shadow-xl overflow-hidden" style={{background: '#fbfdfc', border: '1px solid #cfe9da'}}>
+                                    <div className="px-8 py-6 border-b" style={{background: '#eaf6f0', borderColor: '#cfe9da'}}>
+                                        <h2 className="font-black text-sm uppercase tracking-widest" style={{color: '#3d6e54'}}>個人情報・振込先登録</h2>
+                                        <p className="text-xs mt-1" style={{color: '#8fc7a8'}}>ここに入力した情報が請求書に自動反映されます</p>
                                     </div>
                                     <div className="p-8 space-y-8">
+                                        {/* カフェ専従モード */}
+                                        <div className="p-4 rounded-2xl flex items-center justify-between" style={{background: '#fff8ec', border: '1px solid #f5d394'}}>
+                                            <div>
+                                                <p className="font-black text-sm" style={{color: '#8a6a2a'}}>☕ カフェ専従モード</p>
+                                                <p className="text-[10px] mt-0.5" style={{color: '#a68442'}}>カフェのみ勤務する方はONにしてください</p>
+                                            </div>
+                                            <button
+                                                onClick={() => setProfile({...profile, isCafeOnly: !profile.isCafeOnly})}
+                                                className="relative w-14 h-8 rounded-full transition flex-shrink-0"
+                                                style={{background: profile.isCafeOnly ? '#e0a878' : '#e0d5c5'}}
+                                            >
+                                                <span className="absolute top-1 w-6 h-6 rounded-full bg-white shadow transition-all" style={{left: profile.isCafeOnly ? '28px' : '4px'}}></span>
+                                            </button>
+                                        </div>
+
                                         <div>
-                                            <h3 className="text-[10px] font-black uppercase tracking-widest mb-4" style={{color: '#e07840'}}>個人情報</h3>
+                                            <h3 className="text-[10px] font-black uppercase tracking-widest mb-4" style={{color: '#8fc7a8'}}>個人情報</h3>
                                             <div className="space-y-4">
                                                 {/* 氏名・屋号 */}
                                                 <div>
-                                                    <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#a06040'}}>氏名・屋号</label>
+                                                    <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#5e8f72'}}>氏名・屋号<span style={{color: '#e05050'}}>＊</span></label>
                                                     <input type="text" style={inputStyle} className={inputClass} value={profile.name} onChange={(e) => setProfile({...profile, name: e.target.value})} placeholder="例：山田 花子" />
                                                 </div>
                                                 {/* 郵便番号 */}
                                                 <div>
-                                                    <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#a06040'}}>郵便番号</label>
+                                                    <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#5e8f72'}}>郵便番号<span style={{color: '#e05050'}}>＊</span></label>
                                                     <div className="flex gap-2 items-center">
                                                         <input
                                                             type="text"
@@ -420,63 +481,63 @@
                                                             {zipStatus === 'loading' ? '検索中…' : zipStatus === 'ok' ? '✓ OK' : zipStatus === 'err' ? '❌ 未発見' : '住所を検索'}
                                                         </button>
                                                     </div>
-                                                    <p className="text-[10px] mt-1" style={{color: '#f9b98a'}}>7桁入力後「住所を検索」を押してね</p>
+                                                    <p className="text-[10px] mt-1" style={{color: '#a8d6bc'}}>7桁入力後「住所を検索」を押してね</p>
                                                 </div>
                                                 {/* 住所 */}
                                                 <div>
-                                                    <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#a06040'}}>住所</label>
+                                                    <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#5e8f72'}}>住所<span style={{color: '#e05050'}}>＊</span></label>
                                                     <input type="text" style={inputStyle} className={inputClass} value={profile.address} onChange={(e) => setProfile({...profile, address: e.target.value})} placeholder="番地・建物名まで入力してね" />
                                                 </div>
                                                 {/* 電話番号 */}
                                                 <div>
-                                                    <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#a06040'}}>電話番号</label>
+                                                    <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#5e8f72'}}>電話番号<span style={{color: '#e05050'}}>＊</span></label>
                                                     <input type="tel" style={inputStyle} className={inputClass} value={profile.tel} onChange={(e) => setProfile({...profile, tel: e.target.value})} placeholder="例：090-1234-5678" />
                                                 </div>
                                                 {/* インボイス登録番号 */}
                                                 <div>
-                                                    <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#a06040'}}>インボイス登録番号（任意）</label>
+                                                    <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#5e8f72'}}>インボイス登録番号（任意）</label>
                                                     <input type="text" style={{...inputStyle, padding: '8px 12px', fontSize: '12px'}} className="w-full border-2 rounded-2xl font-bold outline-none transition" value={profile.invoiceNo || ''} onChange={(e) => setProfile({...profile, invoiceNo: e.target.value})} placeholder="例：T1234567890123" />
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div className="pt-6 border-t-2" style={{borderColor: '#f9d4b4'}}>
-                                            <h3 className="text-[10px] font-black uppercase tracking-widest mb-4" style={{color: '#e07840'}}>振込先情報</h3>
+                                        <div className="pt-6 border-t-2" style={{borderColor: '#cfe9da'}}>
+                                            <h3 className="text-[10px] font-black uppercase tracking-widest mb-4" style={{color: '#8fc7a8'}}>振込先情報</h3>
                                             <div className="space-y-4">
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
-                                                        <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#a06040'}}>銀行名</label>
+                                                        <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#5e8f72'}}>銀行名</label>
                                                         <input type="text" style={inputStyle} className={inputClass} value={profile.bankName} onChange={(e) => setProfile({...profile, bankName: e.target.value})} placeholder="例：○○銀行" />
                                                         <input type="text" style={{...inputStyle, marginTop: '6px', fontSize: '12px', padding: '8px 12px'}} className="w-full border-2 rounded-2xl font-bold outline-none transition" value={profile.bankCode || ''} onChange={(e) => setProfile({...profile, bankCode: e.target.value})} placeholder="銀行番号（任意）" />
                                                     </div>
                                                     <div>
-                                                        <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#a06040'}}>支店名</label>
+                                                        <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#5e8f72'}}>支店名</label>
                                                         <input type="text" style={inputStyle} className={inputClass} value={profile.branchName} onChange={(e) => setProfile({...profile, branchName: e.target.value})} placeholder="例：△△支店" />
                                                         <input type="text" style={{...inputStyle, marginTop: '6px', fontSize: '12px', padding: '8px 12px'}} className="w-full border-2 rounded-2xl font-bold outline-none transition" value={profile.branchCode || ''} onChange={(e) => setProfile({...profile, branchCode: e.target.value})} placeholder="支店番号（任意）" />
                                                     </div>
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
-                                                        <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#a06040'}}>口座種別</label>
-                                                        <div className="flex p-1 rounded-2xl" style={{background: '#f9d4b4'}}>
+                                                        <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#5e8f72'}}>口座種別<span style={{color: '#e05050'}}>＊</span></label>
+                                                        <div className="flex p-1 rounded-2xl" style={{background: '#cfe9da'}}>
                                                             {BANK_TYPES.map(t => (
-                                                                <button key={t} onClick={() => setProfile({...profile, bankType: t})} className={`flex-1 py-3 text-sm font-black rounded-xl transition`} style={profile.bankType === t ? {background: 'white', color: '#e07840', boxShadow: '0 1px 4px rgba(0,0,0,0.1)'} : {color: '#a06040'}}>{t}</button>
+                                                                <button key={t} onClick={() => setProfile({...profile, bankType: t})} className={`flex-1 py-3 text-sm font-black rounded-xl transition`} style={profile.bankType === t ? {background: 'white', color: '#8fc7a8', boxShadow: '0 1px 4px rgba(0,0,0,0.1)'} : {color: '#5e8f72'}}>{t}</button>
                                                             ))}
                                                         </div>
                                                     </div>
                                                     <div>
-                                                        <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#a06040'}}>口座番号</label>
+                                                        <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#5e8f72'}}>口座番号<span style={{color: '#e05050'}}>＊</span></label>
                                                         <input type="text" style={inputStyle} className={inputClass} value={profile.bankNumber} onChange={(e) => setProfile({...profile, bankNumber: e.target.value})} placeholder="例：1234567" />
                                                     </div>
                                                 </div>
                                                 <div>
-                                                    <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#a06040'}}>口座名義（カナ）</label>
+                                                    <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#5e8f72'}}>口座名義（カナ）<span style={{color: '#e05050'}}>＊</span></label>
                                                     <input type="text" style={inputStyle} className={inputClass} value={profile.bankHolder} onChange={(e) => setProfile({...profile, bankHolder: e.target.value})} placeholder="例：ヤマダ ハナコ" />
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <button onClick={handleSaveProfile} className={`w-full py-5 rounded-2xl font-black text-xl text-white shadow-xl transition-all active:scale-95 ${profileSaved ? '' : 'save-btn'}`} style={profileSaved ? {background: '#5b9e6e'} : {}}>
+                                        <button onClick={handleSaveProfile} className={`w-full py-5 rounded-2xl font-black text-xl text-white shadow-xl transition-all active:scale-95 ${profileSaved ? '' : 'save-btn'}`} style={profileSaved ? {background: 'linear-gradient(135deg, #e07840, #f09060)'} : {}}>
                                             {profileSaved ? '✓ 保存しました' : '保存する'}
                                         </button>
                                     </div>
@@ -486,15 +547,15 @@
 
                         {/* ===== 入力 ===== */}
                         {currentView === 'input' && (
-                            <div className={`rounded-3xl shadow-xl overflow-hidden ${isSuccess ? 'animate-success' : ''}`} style={{background: '#fffaf7', border: '1px solid #f9d4b4'}}>
-                                <div className="px-8 py-6 border-b" style={{background: '#fdeede', borderColor: '#f9d4b4'}}>
-                                    <h2 className="font-black text-sm uppercase tracking-widest" style={{color: '#7c3d1a'}}>勤務データ登録</h2>
+                            <div className={`rounded-3xl shadow-xl overflow-hidden ${isSuccess ? 'animate-success' : ''}`} style={{background: '#fbfdfc', border: '1px solid #cfe9da'}}>
+                                <div className="px-8 py-6 border-b" style={{background: '#eaf6f0', borderColor: '#cfe9da'}}>
+                                    <h2 className="font-black text-sm uppercase tracking-widest" style={{color: '#3d6e54'}}>勤務データ登録</h2>
                                 </div>
                                 <div className="p-8 space-y-8">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div className="space-y-6">
                                             <div>
-                                                <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#a06040'}}>日付</label>
+                                                <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#5e8f72'}}>日付</label>
                                                 <input type="date" style={inputStyle} className={inputClass} value={formData.date} onChange={(e) => {
                                                     const val = e.target.value;
                                                     if (!isDateAllowed(val)) {
@@ -506,15 +567,18 @@
                                                 {!isDateAllowed(formData.date) && <p className="text-[10px] mt-1" style={{color: 'red'}}>⚠️ 当月・先月のみ入力できます</p>}
                                             </div>
                                             <div>
-                                                <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#a06040'}}>氏名・屋号</label>
+                                                <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#5e8f72'}}>氏名・屋号</label>
                                                 <input type="text" style={inputStyle} className={inputClass} value={formData.name || profile.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder={profile.name || 'プロフィールから自動入力'} />
-                                                {!profile.name && <p className="text-[10px] mt-1" style={{color: '#e07840'}}>※ プロフィールに氏名・屋号を登録すると自動入力されます</p>}
+                                                {!profile.name && <p className="text-[10px] mt-1" style={{color: '#8fc7a8'}}>※ プロフィールに氏名・屋号を登録すると自動入力されます</p>}
                                             </div>
                                         </div>
                                         <div className="space-y-6">
                                             <div>
-                                                <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#a06040'}}>勤務形態</label>
-                                                <div className="grid grid-cols-5 gap-1 p-1 rounded-2xl" style={{background: '#f9d4b4'}}>
+                                                <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#5e8f72'}}>勤務形態</label>
+                                                {profile.isCafeOnly ? (
+                                                    <div className="py-3 px-1 text-sm font-black rounded-2xl text-center" style={{background: 'white', color: '#8fc7a8', border: '2px solid #cfe9da'}}>☕ カフェ</div>
+                                                ) : (
+                                                <div className="grid grid-cols-5 gap-1 p-1 rounded-2xl" style={{background: '#cfe9da'}}>
                                                     {['カフェ', 'フロント', 'ツアー', '物販', '手入力'].map(t => (
                                                         <button key={t} onClick={() => {
                                                             if (['フロント','カフェ','物販'].includes(formData.type)) {
@@ -522,35 +586,51 @@
                                                             }
                                                             const savedTime = ['フロント','カフェ','物販'].includes(t) ? timeByType[t] : { startH: formData.startH, startM: formData.startM, endH: formData.endH, endM: formData.endM, breakTime: '0' };
                                                             setFormData({...formData, type: t, ...savedTime});
-                                                        }} className="py-3 px-0.5 text-[11px] font-black rounded-xl transition whitespace-nowrap overflow-hidden" style={formData.type === t ? {background: 'white', color: '#e07840', boxShadow: '0 1px 4px rgba(0,0,0,0.1)'} : {color: '#a06040'}}>{t}</button>
+                                                        }} className="py-3 px-0.5 text-[11px] font-black rounded-xl transition whitespace-nowrap overflow-hidden" style={formData.type === t ? {background: 'white', color: '#8fc7a8', boxShadow: '0 1px 4px rgba(0,0,0,0.1)'} : {color: '#5e8f72'}}>{t}</button>
                                                     ))}
                                                 </div>
+                                                )}
                                             </div>
+                                            {formData.type === 'ツアー' && (
+                                                <p className="text-xs font-bold" style={{color: '#e05050'}}>※ ツアーはまっちゃんの承認が必要です</p>
+                                            )}
                                             {formData.type === 'ツアー' ? (
-                                                <div>
-                                                    <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#a06040'}}>ツアー参加人数</label>
-                                                    <div className="flex items-center gap-4">
-                                                        <input type="number" style={inputStyle} className={inputClass + ' text-center text-xl'} value={formData.tourGuests} onChange={(e) => setFormData({...formData, tourGuests: e.target.value})} min="1" />
-                                                        <span className="font-bold text-sm" style={{color: '#a06040'}}>名様</span>
+                                                <div className="space-y-3">
+                                                    <div>
+                                                        <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#5e8f72'}}>ツアー種類</label>
+                                                        <div className="grid grid-cols-2 gap-1 p-1 rounded-2xl" style={{background: '#cfe9da'}}>
+                                                            {Object.keys(TOUR_RATES).map(tn => (
+                                                                <button key={tn} onClick={() => setFormData({...formData, tourType: tn})} className="py-3 px-1 text-[11px] font-black rounded-xl transition" style={(formData.tourType || 'レイビレッジツアー') === tn ? {background: 'white', color: '#8fc7a8', boxShadow: '0 1px 4px rgba(0,0,0,0.1)'} : {color: '#5e8f72'}}>
+                                                                    {tn}<br/><span style={{fontSize: '9px', opacity: 0.7}}>（¥{TOUR_RATES[tn].toLocaleString()}/名）</span>
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#5e8f72'}}>ツアー参加人数</label>
+                                                        <div className="flex items-center gap-4">
+                                                            <input type="number" style={inputStyle} className={inputClass + ' text-center text-xl'} value={formData.tourGuests} onChange={(e) => setFormData({...formData, tourGuests: e.target.value})} min="1" />
+                                                            <span className="font-bold text-sm" style={{color: '#5e8f72'}}>名様</span>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ) : formData.type === '手入力' ? (
                                                 <div className="space-y-3">
                                                     <div>
-                                                        <label className="block text-[10px] font-black uppercase mb-1 tracking-widest" style={{color: '#a06040'}}>金額（円）</label>
+                                                        <label className="block text-[10px] font-black uppercase mb-1 tracking-widest" style={{color: '#5e8f72'}}>金額（円）</label>
                                                         <div className="flex items-center gap-4">
-                                                            <span className="font-bold text-xl" style={{color: '#a06040'}}>¥</span>
+                                                            <span className="font-bold text-xl" style={{color: '#5e8f72'}}>¥</span>
                                                             <input type="number" style={inputStyle} className={inputClass + ' text-center text-xl'} value={formData.manualAmount} onChange={(e) => setFormData({...formData, manualAmount: e.target.value})} min="0" placeholder="例：150000" />
                                                         </div>
                                                     </div>
                                                     <div>
-                                                        <label className="block text-[10px] font-black uppercase mb-1 tracking-widest" style={{color: '#a06040'}}>内容（任意）</label>
+                                                        <label className="block text-[10px] font-black uppercase mb-1 tracking-widest" style={{color: '#5e8f72'}}>内容（任意）</label>
                                                         <input type="text" style={{...inputStyle, padding: '8px 12px', fontSize: '12px'}} className="w-full border-2 rounded-2xl font-bold outline-none transition" value={formData.manualLabel || ''} onChange={(e) => setFormData({...formData, manualLabel: e.target.value})} placeholder="例：出張費" />
                                                     </div>
                                                 </div>
                                             ) : (
                                                 <div>
-                                                    <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#a06040'}}>休憩時間（分）</label>
+                                                    <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#5e8f72'}}>休憩時間（分）</label>
                                                     <input type="text" inputMode="numeric" pattern="[0-9]*" style={inputStyle} className={inputClass} value={formData.breakTime} onChange={(e) => setFormData({...formData, breakTime: e.target.value.replace(/[^0-9]/g, '')})} placeholder="0" />
                                                 </div>
                                             )}
@@ -558,9 +638,9 @@
                                     </div>
 
                                     {(formData.type !== 'ツアー' && formData.type !== '手入力') && (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t-2" style={{borderColor: '#f9d4b4'}}>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t-2" style={{borderColor: '#cfe9da'}}>
                                             <div>
-                                                <label className="block text-[10px] font-black uppercase mb-3 tracking-widest" style={{color: '#a06040'}}>開始時間</label>
+                                                <label className="block text-[10px] font-black uppercase mb-3 tracking-widest" style={{color: '#5e8f72'}}>開始時間</label>
                                                 <div className="flex gap-2">
                                                     <select value={formData.startH} onChange={(e) => setFormData({...formData, startH: e.target.value})} className="flex-1 p-4 rounded-2xl border-2 text-center font-bold outline-none" style={inputStyle}>
                                                         {HOURS.map(h => <option key={h} value={h}>{h}時</option>)}
@@ -571,7 +651,7 @@
                                                 </div>
                                             </div>
                                             <div>
-                                                <label className="block text-[10px] font-black uppercase mb-3 tracking-widest" style={{color: '#a06040'}}>終了時間</label>
+                                                <label className="block text-[10px] font-black uppercase mb-3 tracking-widest" style={{color: '#5e8f72'}}>終了時間</label>
                                                 <div className="flex gap-2">
                                                     <select value={formData.endH} onChange={(e) => setFormData({...formData, endH: e.target.value})} className="flex-1 p-4 rounded-2xl border-2 text-center font-bold outline-none" style={inputStyle}>
                                                         {HOURS.map(h => <option key={h} value={h}>{h}時</option>)}
@@ -584,20 +664,20 @@
                                         </div>
                                     )}
 
-                                    <div className="p-8 rounded-[2rem] flex flex-col md:flex-row justify-between items-center gap-4" style={{background: '#fffbe8', border: '2px solid #f5e8a0'}}>
+                                    <div className="p-8 rounded-[2rem] flex flex-col md:flex-row justify-between items-center gap-4" style={{background: '#f0faf3', border: '2px solid #cfe9da'}}>
                                         <div className="text-center md:text-left">
-                                            <p className="text-[10px] font-black uppercase mb-1 tracking-widest" style={{color: '#a08820'}}>今回の実績</p>
-                                            <p className="text-3xl font-black tracking-tight" style={{color: '#5a4a10'}}>
+                                            <p className="text-[10px] font-black uppercase mb-1 tracking-widest" style={{color: '#5e8f72'}}>今回の実績</p>
+                                            <p className="text-3xl font-black tracking-tight" style={{color: '#3d5c4a'}}>
                                                 {formData.type === 'ツアー' ? `${currentCalculation.guests}名` : formData.type === '手入力' ? '手入力' : `${currentCalculation.hours}時間`}
                                             </p>
                                         </div>
                                         <div className="text-center md:text-right">
-                                            <p className="text-[10px] font-black uppercase mb-1 tracking-widest" style={{color: '#a08820'}}>小計金額</p>
-                                            <p className="text-5xl font-black tracking-tighter" style={{color: '#5a4a10'}}>¥{currentCalculation.amount.toLocaleString()}</p>
+                                            <p className="text-[10px] font-black uppercase mb-1 tracking-widest" style={{color: '#5e8f72'}}>小計金額</p>
+                                            <p className="text-5xl font-black tracking-tighter" style={{color: '#3d5c4a'}}>¥{currentCalculation.amount.toLocaleString()}</p>
                                         </div>
                                     </div>
 
-                                    <button onClick={handleAddRecord} disabled={isSuccess} className="w-full py-6 rounded-2xl font-black text-xl text-white shadow-2xl transition-all active:scale-95 flex justify-center items-center gap-3" style={isSuccess ? {background: '#5b9e6e'} : {background: 'linear-gradient(135deg, #e07840, #f09060)'}}>
+                                    <button onClick={handleAddRecord} disabled={isSuccess} className="w-full py-6 rounded-2xl font-black text-xl text-white shadow-2xl transition-all active:scale-95 flex justify-center items-center gap-3" style={isSuccess ? {background: 'linear-gradient(135deg, #e07840, #f09060)'} : {background: 'linear-gradient(135deg, #5a9c79, #7fc8a3)'}}>
                                         {isSuccess ? "✓ 記録を保存しました" : "勤務を記録する"}
                                     </button>
                                 </div>
@@ -608,36 +688,49 @@
                         {currentView === 'history' && (
                             <div className="space-y-4">
                                 {/* 月選択 */}
-                                <div className="p-5 rounded-2xl flex items-center gap-4" style={{background: '#fffaf7', border: '1px solid #f9d4b4'}}>
-                                    <label className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap" style={{color: '#a06040'}}>表示月</label>
-                                    <input type="month" className="flex-1 p-3 border-2 rounded-xl font-bold outline-none" style={{background: '#fff4ed', borderColor: '#f9d4b4'}} value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} />
-                                    <button onClick={() => setSelectedMonth('')} className="text-[10px] font-black px-3 py-2 rounded-xl whitespace-nowrap" style={!selectedMonth ? {background: '#e07840', color: 'white'} : {background: '#f9d4b4', color: '#a06040'}}>全件</button>
+                                <div className="p-5 rounded-2xl flex items-center gap-4" style={{background: '#fbfdfc', border: '1px solid #cfe9da'}}>
+                                    <label className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap" style={{color: '#5e8f72'}}>表示月</label>
+                                    <input type="month" className="flex-1 p-3 border-2 rounded-xl font-bold outline-none" style={{background: '#f3faf6', borderColor: '#cfe9da'}} value={selectedMonth} onChange={(e) => { setSelectedMonth(e.target.value); setHistoryShowAll(false); }} />
+                                    <button onClick={() => setHistoryShowAll(true)} className="text-[10px] font-black px-3 py-2 rounded-xl whitespace-nowrap" style={historyShowAll ? {background: '#8fc7a8', color: 'white'} : {background: '#cfe9da', color: '#5e8f72'}}>全件</button>
                                 </div>
 
                                 {/* 件数・合計・一括削除 */}
                                 {(() => {
-                                    const shown = (selectedMonth
-                                        ? records.filter(r => r.date.startsWith(selectedMonth))
+                                    const activeMonth = historyShowAll ? '' : selectedMonth;
+                                    const shown = (activeMonth
+                                        ? records.filter(r => r.date.startsWith(activeMonth))
                                         : records);
                                     const total = shown.reduce((s, r) => s + r.amount, 0);
                                     return shown.length > 0 && (
                                         <div className="px-2 flex justify-between items-center">
                                             <div className="flex items-center gap-4">
-                                                <span className="text-[10px] font-black uppercase tracking-widest" style={{color: '#a06040'}}>{shown.length}件</span>
-                                                <span className="font-black text-base" style={{color: '#7c3d1a'}}>合計 ¥{total.toLocaleString()}</span>
+                                                <span className="text-[10px] font-black uppercase tracking-widest" style={{color: '#5e8f72'}}>{shown.length}件</span>
+                                                <span className="font-black text-base" style={{color: '#3d6e54'}}>合計 ¥{total.toLocaleString()}</span>
                                             </div>
-                                            {selectedMonth && (
+                                            {activeMonth && (
                                                 <button
-                                                    onClick={() => showConfirm(
-                                                        `${selectedMonth}のデータを全件削除しますか？\nこの操作は元に戻せません。`,
-                                                        () => setRecords(records.filter(r => !r.date.startsWith(selectedMonth))),
-                                                        true,
-                                                        '削除する'
-                                                    )}
+                                                    onClick={() => {
+                                                        const targets = records.filter(r => r.date.startsWith(activeMonth));
+                                                        const hasApproved = targets.some(r => approvedIds.includes(r.id));
+                                                        const doDelete = () => {
+                                                            setRecords(records.filter(r => !r.date.startsWith(activeMonth)));
+                                                            setApprovedIds(prev => prev.filter(id => !targets.some(t => t.id === id)));
+                                                        };
+                                                        if (hasApproved) {
+                                                            askPassword(activeMonth + '-01', `${activeMonth}には承認済みのデータが含まれています。\n本当に全件削除しますか？\n（まっちゃん確認用パスワードが必要です）`, doDelete);
+                                                        } else {
+                                                            showConfirm(
+                                                                `${activeMonth}のデータを全件削除しますか？\nこの操作は元に戻せません。`,
+                                                                doDelete,
+                                                                true,
+                                                                '削除する'
+                                                            );
+                                                        }
+                                                    }}
                                                     className="text-xs underline"
-                                                    style={{color: '#f09060', background: 'none', border: 'none', cursor: 'pointer'}}
+                                                    style={{color: '#a8d6bc', background: 'none', border: 'none', cursor: 'pointer'}}
                                                 >
-                                                    🗑️ {selectedMonth}を一括削除
+                                                    🗑️ {activeMonth}を一括削除
                                                 </button>
                                             )}
                                         </div>
@@ -646,27 +739,41 @@
 
                                 {/* 履歴リスト */}
                                 {(() => {
-                                    const shown = (selectedMonth
-                                        ? records.filter(r => r.date.startsWith(selectedMonth))
+                                    const activeMonth = historyShowAll ? '' : selectedMonth;
+                                    const shown = (activeMonth
+                                        ? records.filter(r => r.date.startsWith(activeMonth))
                                         : records
                                     ).sort((a, b) => new Date(b.date) - new Date(a.date));
                                     return shown.length === 0
-                                        ? <div className="p-20 text-center font-bold" style={{color: '#f9c8a0'}}>データがありません</div>
-                                        : shown.map(r => (
-                                            <div key={r.id} className="p-6 rounded-2xl shadow-sm flex justify-between items-center" style={{background: '#fffaf7', border: '1px solid #f9d4b4'}}>
+                                        ? <div className="p-20 text-center font-bold" style={{color: '#bfe3cd'}}>データがありません</div>
+                                        : shown.map(r => {
+                                            const isApproved = approvedIds.includes(r.id);
+                                            return (
+                                            <div key={r.id} className="p-6 rounded-2xl shadow-sm flex justify-between items-center" style={{background: '#fbfdfc', border: isApproved ? '2px solid #8fc7a8' : '1px solid #cfe9da'}}>
                                                 <div>
                                                     <div className="flex items-center gap-3">
                                                         <span className={`font-black px-4 py-1 rounded-full ${r.type === 'ツアー' ? 'tag-tour' : 'tag-work'}`} style={{fontSize: '0.85rem'}}>{r.type}</span>
+                                                        {isApproved && <span className="font-black px-3 py-1 rounded-full text-[11px]" style={{background: '#8fc7a8', color: 'white'}}>✓ 承認済</span>}
                                                     </div>
-                                                    <p className="text-xs mt-2 font-medium" style={{color: '#a06040'}}>{r.date} | {r.type === 'ツアー' ? `ツアーガイド ${r.guests}名` : r.type === '手入力' ? (r.manualLabel || '手入力') : `${r.startTime}〜${r.endTime}`}</p>
-                                                    {r.registeredAt && <p className="text-[10px] mt-1" style={{color: '#c4a09a'}}>登録：{r.registeredAt}</p>}
+                                                    <p className="text-xs mt-2 font-medium" style={{color: '#5e8f72'}}>{r.date} | {r.type === 'ツアー' ? `${r.tourType || 'ツアーガイド'} ${r.guests}名` : r.type === '手入力' ? (r.manualLabel || '手入力') : `${r.startTime}〜${r.endTime}`}</p>
+                                                    {r.registeredAt && <p className="text-[10px] mt-1" style={{color: '#a3c9b3'}}>登録：{r.registeredAt}</p>}
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="font-black text-xl tracking-tighter" style={{color: '#7c3d1a'}}>¥{r.amount.toLocaleString()}</p>
-                                                    <button onClick={() => setRecords(records.filter(x => x.id !== r.id))} className="text-[10px] font-black hover:underline mt-1" style={{color: '#f09060', background: 'none', border: 'none', cursor: 'pointer'}}>削除</button>
+                                                    <p className="font-black text-xl tracking-tighter" style={{color: '#3d6e54'}}>¥{r.amount.toLocaleString()}</p>
+                                                    {!isApproved ? (
+                                                        <div className="flex gap-2 justify-end mt-1">
+                                                            {r.type === 'ツアー' && (
+                                                                <button onClick={() => askPassword(r.date, 'この記録を承認しますか？\n（まっちゃん確認用パスワードが必要です）', () => setApprovedIds(prev => [...prev, r.id]))} className="text-[10px] font-black hover:underline" style={{color: '#e05050', background: 'none', border: 'none', cursor: 'pointer'}}>承認</button>
+                                                            )}
+                                                            <button onClick={() => setRecords(records.filter(x => x.id !== r.id))} className="text-[10px] font-black hover:underline" style={{color: '#a8d6bc', background: 'none', border: 'none', cursor: 'pointer'}}>削除</button>
+                                                        </div>
+                                                    ) : (
+                                                        <button onClick={() => askPassword(r.date, '承認済みのデータです。\n本当に削除しますか？\n（まっちゃん確認用パスワードが必要です）', () => { setRecords(records.filter(x => x.id !== r.id)); setApprovedIds(prev => prev.filter(id => id !== r.id)); })} className="text-[10px] font-black hover:underline mt-1" style={{color: '#d99090', background: 'none', border: 'none', cursor: 'pointer'}}>🔒 削除（要パスワード）</button>
+                                                    )}
                                                 </div>
                                             </div>
-                                        ));
+                                            );
+                                        });
                                 })()}
                             </div>
                         )}
@@ -674,27 +781,27 @@
                         {/* ===== 詳細確認 ===== */}
                         {currentView === 'detail' && (
                             <div className="space-y-4">
-                                <div className="p-5 md:p-8 rounded-3xl shadow-xl no-print" style={{background: '#fffaf7', border: '1px solid #f9d4b4'}}>
-                                    <h2 className="text-xs font-black uppercase tracking-widest mb-4 md:mb-6" style={{color: '#a06040'}}>勤務詳細確認（月別）</h2>
+                                <div className="p-5 md:p-8 rounded-3xl shadow-xl no-print" style={{background: '#fbfdfc', border: '1px solid #cfe9da'}}>
+                                    <h2 className="text-xs font-black uppercase tracking-widest mb-4 md:mb-6" style={{color: '#5e8f72'}}>勤務詳細確認（月別）</h2>
                                     <div className="grid grid-cols-2 gap-3 md:gap-6">
                                         <div>
-                                            <label className="text-[9px] md:text-[10px] font-black uppercase mb-2 block tracking-widest" style={{color: '#a06040'}}>氏名・屋号</label>
-                                            <div className="p-3 md:p-4 rounded-2xl border-2 font-bold text-sm md:text-base whitespace-nowrap overflow-hidden text-ellipsis" style={{background: '#fff4ed', borderColor: '#f9d4b4', color: '#7c3d1a'}}>
+                                            <label className="text-[9px] md:text-[10px] font-black uppercase mb-2 block tracking-widest" style={{color: '#5e8f72'}}>氏名・屋号</label>
+                                            <div className="p-3 md:p-4 rounded-2xl border-2 font-bold text-sm md:text-base whitespace-nowrap overflow-hidden text-ellipsis" style={{background: '#f3faf6', borderColor: '#cfe9da', color: '#3d6e54'}}>
                                                 {profile.name || '（未登録）'}
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="text-[9px] md:text-[10px] font-black uppercase mb-2 block tracking-widest" style={{color: '#a06040'}}>対象月</label>
-                                            <input type="month" className="w-full p-3 md:p-4 border-2 rounded-2xl font-bold outline-none text-sm md:text-base" style={{background: '#fff4ed', borderColor: '#f9d4b4'}} value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} />
+                                            <label className="text-[9px] md:text-[10px] font-black uppercase mb-2 block tracking-widest" style={{color: '#5e8f72'}}>対象月</label>
+                                            <input type="month" className="w-full p-3 md:p-4 border-2 rounded-2xl font-bold outline-none text-sm md:text-base" style={{background: '#f3faf6', borderColor: '#cfe9da'}} value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} />
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* PC：テーブル表示 / スマホ：カード表示 */}
-                                <div className="hidden md:block p-8 rounded-3xl shadow-lg overflow-hidden" style={{background: '#fffaf7', border: '1px solid #f9d4b4'}}>
+                                <div className="hidden md:block p-8 rounded-3xl shadow-lg overflow-hidden" style={{background: '#fbfdfc', border: '1px solid #cfe9da'}}>
                                     <table className="w-full">
                                         <thead>
-                                            <tr className="border-b-2 text-left text-[10px] uppercase font-black" style={{borderColor: '#f9d4b4', color: '#a06040'}}>
+                                            <tr className="border-b-2 text-left text-[10px] uppercase font-black" style={{borderColor: '#cfe9da', color: '#5e8f72'}}>
                                                 <th className="pb-4 px-2">日付</th>
                                                 <th className="pb-4">区分</th>
                                                 <th className="pb-4">内容</th>
@@ -704,12 +811,12 @@
                                         </thead>
                                         <tbody className="text-sm">
                                             {invoiceData.filtered.map(r => (
-                                                <tr key={r.id} className="border-b transition" style={{borderColor: '#fdeede'}}>
-                                                    <td className="py-4 px-2 font-bold" style={{color: '#7c3d1a'}}>{r.date.split('-').slice(1).join('/')}</td>
-                                                    <td className="py-4 text-xs font-black" style={{color: '#a06040'}}>{r.type}</td>
-                                                    <td className="py-4 text-xs font-medium" style={{color: '#e07840'}}>{r.type === 'ツアー' ? 'ツアーガイド' : r.type === '手入力' ? (r.manualLabel || '手入力') : `${r.startTime}〜${r.endTime}`}</td>
-                                                    <td className="py-4 text-right font-mono font-bold" style={{color: '#7c3d1a'}}>{r.type === 'ツアー' ? `${r.guests}名` : r.type === '手入力' ? '1' : `${r.hours || 1}h`}</td>
-                                                   <td className="py-4 text-right font-black italic" style={{color: '#7c3d1a'}}>¥{r.amount.toLocaleString()}</td>
+                                                <tr key={r.id} className="border-b transition" style={{borderColor: '#eaf6f0'}}>
+                                                    <td className="py-4 px-2 font-bold" style={{color: '#3d6e54'}}>{r.date.split('-').slice(1).join('/')}</td>
+                                                    <td className="py-4 text-xs font-black" style={{color: '#5e8f72'}}>{r.type}</td>
+                                                    <td className="py-4 text-xs font-medium" style={{color: '#8fc7a8'}}>{r.type === 'ツアー' ? (r.tourType || 'ツアーガイド') : r.type === '手入力' ? (r.manualLabel || '手入力') : `${r.startTime}〜${r.endTime}`}</td>
+                                                    <td className="py-4 text-right font-mono font-bold" style={{color: '#3d6e54'}}>{r.type === 'ツアー' ? `${r.guests}名` : r.type === '手入力' ? '1' : `${r.hours || 1}h`}</td>
+                                                   <td className="py-4 text-right font-black italic" style={{color: '#3d6e54'}}>¥{r.amount.toLocaleString()}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -722,19 +829,19 @@
 
                                 <div className="md:hidden space-y-2">
                                     {invoiceData.filtered.length === 0 ? (
-                                        <div className="p-12 text-center font-bold rounded-3xl" style={{background: '#fffaf7', border: '1px solid #f9d4b4', color: '#f9c8a0'}}>データがありません</div>
+                                        <div className="p-12 text-center font-bold rounded-3xl" style={{background: '#fbfdfc', border: '1px solid #cfe9da', color: '#bfe3cd'}}>データがありません</div>
                                     ) : invoiceData.filtered.map(r => (
-                                        <div key={r.id} className="p-4 rounded-2xl shadow-sm" style={{background: '#fffaf7', border: '1px solid #f9d4b4'}}>
+                                        <div key={r.id} className="p-4 rounded-2xl shadow-sm" style={{background: '#fbfdfc', border: '1px solid #cfe9da'}}>
                                             <div className="flex justify-between items-start">
                                                 <div className="flex items-center gap-2">
-                                                    <span className="font-bold text-sm" style={{color: '#7c3d1a'}}>{r.date.split('-').slice(1).join('/')}</span>
+                                                    <span className="font-bold text-sm" style={{color: '#3d6e54'}}>{r.date.split('-').slice(1).join('/')}</span>
                                                     <span className={`font-black px-2 py-0.5 rounded-full text-[11px] ${r.type === 'ツアー' ? 'tag-tour' : 'tag-work'}`}>{r.type}</span>
                                                 </div>
-                                                <span className="font-black text-lg" style={{color: '#7c3d1a'}}>¥{r.amount.toLocaleString()}</span>
+                                                <span className="font-black text-lg" style={{color: '#3d6e54'}}>¥{r.amount.toLocaleString()}</span>
                                             </div>
                                             <div className="flex justify-between items-center mt-1.5">
-                                                <span className="text-xs" style={{color: '#e07840'}}>{r.type === 'ツアー' ? 'ツアーガイド' : r.type === '手入力' ? (r.manualLabel || '手入力') : `${r.startTime}〜${r.endTime}`}</span>
-                                                <span className="text-xs font-mono font-bold" style={{color: '#a06040'}}>{r.type === 'ツアー' ? `${r.guests}名` : r.type === '手入力' ? '1' : `${r.hours || 1}h`}</span>
+                                                <span className="text-xs" style={{color: '#8fc7a8'}}>{r.type === 'ツアー' ? (r.tourType || 'ツアーガイド') : r.type === '手入力' ? (r.manualLabel || '手入力') : `${r.startTime}〜${r.endTime}`}</span>
+                                                <span className="text-xs font-mono font-bold" style={{color: '#5e8f72'}}>{r.type === 'ツアー' ? `${r.guests}名` : r.type === '手入力' ? '1' : `${r.hours || 1}h`}</span>
                                             </div>
                                         </div>
                                     ))}
@@ -751,15 +858,15 @@
                         {/* ===== 請求書 ===== */}
                         {currentView === 'invoice' && (
                             <div className="space-y-6">
-                                <div className="p-8 rounded-3xl shadow-xl no-print mb-6" style={{background: '#fffaf7', border: '1px solid #f9d4b4'}}>
-                                    <h2 className="text-xs font-black uppercase tracking-widest mb-1" style={{color: '#a06040'}}>請求書発行設定</h2><div className="space-y-1">
-<p style={{color:'red', fontWeight:'bold', fontSize:'12px', marginTop:'1px'}}>⚠️ 提出期限：毎月10日</p>
+                                <div className="p-8 rounded-3xl shadow-xl no-print mb-6" style={{background: '#fbfdfc', border: '1px solid #cfe9da'}}>
+                                    <h2 className="text-xs font-black uppercase tracking-widest mb-1" style={{color: '#5e8f72'}}>請求書発行設定</h2><div className="space-y-1">
+<p style={{color:'red', fontWeight:'bold', fontSize:'12px', marginTop:'1px'}}>提出期限：毎月10日</p>
 
-<div><label className="text-[10px] font-black uppercase tracking-widest block mb-2" style={{color: '#a06040'}}>対象月</label>
+<div><label className="text-[10px] font-black uppercase tracking-widest block mb-2" style={{color: '#5e8f72'}}>対象月</label>
                                             <div className="flex items-center gap-3">
                                                 <input type="month" className="flex-1 p-3 border-2 rounded-xl font-bold outline-none" style={{
-                                                    background: sentMonths.includes(selectedMonth) ? '#e8e8e8' : '#fff4ed',
-                                                    borderColor: sentMonths.includes(selectedMonth) ? '#aaaaaa' : '#f9d4b4',
+                                                    background: sentMonths.includes(selectedMonth) ? '#e8e8e8' : '#f3faf6',
+                                                    borderColor: sentMonths.includes(selectedMonth) ? '#aaaaaa' : '#cfe9da',
                                                     color: sentMonths.includes(selectedMonth) ? '#666666' : 'inherit'
                                                 }} value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} />
                                                 {selectedMonth && sentMonths.includes(selectedMonth) && (
@@ -768,27 +875,30 @@
                                             </div>
                                         </div>
                                         <div>
-<label className="text-[10px] font-black uppercase tracking-widest block mb-2" style={{color: '#a06040'}}>送信先URL（管理者から受け取ったURLを貼ってね）</label>
-                                            <input type="url" className="w-full p-3 border-2 rounded-xl font-bold outline-none text-xs" style={{background: '#fff4ed', borderColor: '#f9d4b4'}} defaultValue={GAS_URL} onChange={(e) => localStorage.setItem('gas_url', e.target.value)} placeholder="https://script.google.com/macros/s/..." />
+<label className="text-[10px] font-black uppercase tracking-widest block mb-2" style={{color: '#5e8f72'}}>送信先URL（管理者から受け取ったURLを貼ってね）</label>
+                                            <input type="url" className="w-full p-3 border-2 rounded-xl font-bold outline-none text-xs" style={{background: '#f3faf6', borderColor: '#cfe9da'}} defaultValue={GAS_URL} onChange={(e) => localStorage.setItem('gas_url', e.target.value)} placeholder="https://script.google.com/macros/s/..." />
                                         </div>
                                     </div>
-                                    {!profile.name && <p className="text-xs font-bold mt-3" style={{color: '#f09060'}}>⚠ プロフィールに氏名・屋号を登録してください</p>}
+                                    {!profile.name && <p className="text-xs font-bold mt-3" style={{color: '#a8d6bc'}}>⚠ プロフィールに氏名・屋号を登録してください</p>}
                                     {getMissingFields().length > 0 && (
                                         <p className="text-xs font-bold mt-2" style={{color: '#e05050'}}>⚠ 未登録：{getMissingFields().join('・')}</p>
+                                    )}
+                                    {selectedMonth && hasUnapprovedTour && (
+                                        <p className="text-base font-bold mt-3 text-center" style={{color: '#e05050'}}>⚠ ツアーに未承認の記録があります。<br className="md:hidden" />履歴タブでまっちゃんの承認を受けてください。</p>
                                     )}
                                 </div>
 
                                 {/* 全件時・マスト未入力時は請求書非表示 */}
                                 {!selectedMonth ? (
-                                    <div className="p-16 text-center rounded-3xl" style={{background: '#fffaf7', border: '1px solid #f9d4b4'}}>
-                                        <p className="font-black text-lg" style={{color: '#a06040'}}>📅 対象月を選択してください</p>
-                                        <p className="text-xs mt-2" style={{color: '#f9c8a0'}}>請求書は月ごとに発行できます</p>
+                                    <div className="p-16 text-center rounded-3xl" style={{background: '#fbfdfc', border: '1px solid #cfe9da'}}>
+                                        <p className="font-black text-lg" style={{color: '#5e8f72'}}>📅 対象月を選択してください</p>
+                                        <p className="text-xs mt-2" style={{color: '#bfe3cd'}}>請求書は月ごとに発行できます</p>
                                     </div>
                                 ) : getMissingFields().length > 0 ? (
-                                    <div className="p-16 text-center rounded-3xl" style={{background: '#fffaf7', border: '1px solid #f9d4b4'}}>
+                                    <div className="p-16 text-center rounded-3xl" style={{background: '#fbfdfc', border: '1px solid #cfe9da'}}>
                                         <p className="font-black text-lg" style={{color: '#e05050'}}>⚠️ 登録情報が不足しています</p>
-                                        <p className="text-xs mt-2" style={{color: '#a06040'}}>未入力：{getMissingFields().join('・')}</p>
-                                        <p className="text-xs mt-1" style={{color: '#f9c8a0'}}>登録タブで入力・保存してから戻ってきてね</p>
+                                        <p className="text-xs mt-2" style={{color: '#5e8f72'}}>未入力：{getMissingFields().join('・')}</p>
+                                        <p className="text-xs mt-1" style={{color: '#bfe3cd'}}>登録タブで入力・保存してから戻ってきてね</p>
                                     </div>
                                 ) : (
                                 <>
@@ -901,20 +1011,21 @@
                                     {/* 送信ボタン */}
                                     <button
                                         onClick={handleSendInvoice}
-                                        disabled={sendStatus === 'sending'}
+                                        disabled={sendStatus === 'sending' || hasUnapprovedTour}
                                         className="w-full py-5 rounded-3xl font-black text-sm md:text-lg shadow-xl transition transform hover:-translate-y-1 whitespace-nowrap overflow-hidden text-ellipsis px-2"
                                         style={{
-                                            background: sendStatus === 'ok' ? '#5b9e6e' : sendStatus === 'error' ? '#e05050' : 'linear-gradient(135deg, #3a7bd5, #5a9ee0)',
-                                            color: 'white'
+                                            background: hasUnapprovedTour ? '#cccccc' : sendStatus === 'ok' ? '#5b9e6e' : sendStatus === 'error' ? '#e05050' : 'linear-gradient(135deg, #4ba87f, #7fc8a3)',
+                                            color: 'white',
+                                            cursor: hasUnapprovedTour ? 'not-allowed' : 'pointer'
                                         }}
                                     >
-                                        {sendStatus === 'sending' ? '📤 送信中…' : sendStatus === 'ok' ? '✓ 送信完了しました' : sendStatus === 'error' ? '❌ 送信失敗（URLを確認してね）' : '📤 業務委託請求書（PDF）を送信する'}
+                                        {hasUnapprovedTour ? '🔒 ツアー未承認のため送信できません' : sendStatus === 'sending' ? '📤 送信中…' : sendStatus === 'ok' ? '✓ 送信完了しました' : sendStatus === 'error' ? '❌ 送信失敗（URLを確認してね）' : '📤 業務委託請求書（PDF）を送信する'}
                                     </button>
 
                                     {/* 印刷リンク */}
                                     <div className="text-center">
-                                        <button onClick={() => window.print()} className="text-sm underline" style={{color: '#a06040', background: 'none', border: 'none', cursor: 'pointer'}}>
-                                            🖨️ 印刷はこちら（任意）
+                                        <button onClick={() => window.print()} className="text-sm underline" style={{color: '#5e8f72', background: 'none', border: 'none', cursor: 'pointer'}}>
+                                            🖨️ 印刷（任意）
                                         </button>
                                     </div>
                                 </div>
@@ -928,31 +1039,69 @@
                     {/* 独自確認ダイアログ */}
                     {confirmDialog && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{background: 'rgba(0,0,0,0.5)'}}>
-                            <div className="mx-4 p-8 rounded-3xl shadow-2xl max-w-sm w-full" style={{background: '#fffaf7', border: '2px solid #f9d4b4'}}>
-                                <p className="font-black text-center mb-6 whitespace-pre-line" style={{color: '#7c3d1a', fontSize: '14px', lineHeight: '1.7'}}>{confirmDialog.message}</p>
+                            <div className="mx-4 p-8 rounded-3xl shadow-2xl max-w-sm w-full" style={{background: '#fbfdfc', border: '2px solid #cfe9da'}}>
+                                <p className="font-black text-center mb-6 whitespace-pre-line" style={{color: '#3d6e54', fontSize: '14px', lineHeight: '1.7'}}>{confirmDialog.message}</p>
                                 <div className="flex gap-3">
                                     <button
                                         onClick={() => setConfirmDialog(null)}
                                         className="flex-1 py-3 rounded-2xl font-black text-sm"
-                                        style={{background: '#f9d4b4', color: '#a06040'}}
+                                        style={{background: '#cfe9da', color: '#5e8f72'}}
                                     >キャンセル</button>
                                     <button
                                         onClick={() => { confirmDialog.onOk(); setConfirmDialog(null); }}
                                         className="flex-1 py-3 rounded-2xl font-black text-sm text-white"
-                                        style={{background: confirmDialog.isDanger ? '#e05050' : 'linear-gradient(135deg, #3a7bd5, #5a9ee0)'}}
+                                        style={{background: confirmDialog.isDanger ? '#e05050' : 'linear-gradient(135deg, #4ba87f, #7fc8a3)'}}
                                     >{confirmDialog.okLabel || '送信する'}</button>
                                 </div>
                             </div>
                         </div>
                     )}
 
+                    {/* パスワード確認ダイアログ（承認・承認済み削除用） */}
+                    {pwDialog && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{background: 'rgba(0,0,0,0.5)'}}>
+                            <div className="mx-4 p-8 rounded-3xl shadow-2xl max-w-sm w-full" style={{background: '#fbfdfc', border: '2px solid #cfe9da'}}>
+                                <p className="font-black text-center mb-4 whitespace-pre-line" style={{color: '#3d6e54', fontSize: '14px', lineHeight: '1.7'}}>{pwDialog.message}</p>
+                                <input
+                                    type="text"
+                                    autoFocus
+                                    value={pwInput}
+                                    onChange={(e) => { setPwInput(e.target.value); setPwError(false); }}
+                                    placeholder="パスワードを入力"
+                                    className="w-full p-3 mb-2 border-2 rounded-xl font-bold text-center outline-none"
+                                    style={{background: '#f3faf6', borderColor: pwError ? '#e05050' : '#cfe9da'}}
+                                />
+                                {pwError && <p className="text-xs text-center mb-3" style={{color: '#e05050'}}>パスワードが違います</p>}
+                                <div className="flex gap-3 mt-3">
+                                    <button
+                                        onClick={() => setPwDialog(null)}
+                                        className="flex-1 py-3 rounded-2xl font-black text-sm"
+                                        style={{background: '#cfe9da', color: '#5e8f72'}}
+                                    >キャンセル</button>
+                                    <button
+                                        onClick={() => {
+                                            if (pwInput === pwDialog.correctPw) {
+                                                pwDialog.onOk();
+                                                setPwDialog(null);
+                                            } else {
+                                                setPwError(true);
+                                            }
+                                        }}
+                                        className="flex-1 py-3 rounded-2xl font-black text-sm text-white"
+                                        style={{background: 'linear-gradient(135deg, #4ba87f, #7fc8a3)'}}
+                                    >確認する</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* モバイルナビ（スマホ最適化） */}
-                    <div className="fixed bottom-0 left-0 right-0 backdrop-blur-xl border-t no-print z-40" style={{background: 'rgba(255,250,247,0.97)', borderColor: '#f9d4b4'}}>
+                    <div className="fixed bottom-0 left-0 right-0 backdrop-blur-xl border-t no-print z-40" style={{background: 'rgba(251,253,252,0.97)', borderColor: '#cfe9da'}}>
                         <div className="flex justify-around items-center" style={{paddingBottom: 'env(safe-area-inset-bottom)', paddingTop: '8px', paddingBottom: 'calc(env(safe-area-inset-bottom) + 8px)'}}>
                             {navItems.map(v => (
                                 <button key={v.id} onClick={() => setCurrentView(v.id)}
                                     className="flex flex-col items-center gap-1 py-1 px-2"
-                                    style={currentView === v.id ? {color: '#e07840'} : {color: '#f9c8a0'}}
+                                    style={currentView === v.id ? {color: '#8fc7a8'} : {color: '#bfe3cd'}}
                                 >
                                     <span style={{fontSize: '20px'}}>{v.label.split(' ')[0]}</span>
                                     <span style={{fontSize: '9px', fontWeight: '800'}}>{v.label.split(' ')[1] || v.label}</span>
