@@ -81,7 +81,7 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
         const HOURLY_RATE = 1200;
-        const TOUR_RATES = { 'レイビレッジツアー': 1000, '素戔嗚散歩': 2000 };
+        const TOUR_RATES = { 'レイビレツアー・瞑想': 1000, '素戔嗚散歩': 2000 };
         const BANK_TYPES = ['普通', '当座'];
         const HOURS = Array.from({ length: 18 }, (_, i) => String(i + 6).padStart(2, '0'));
         const MINUTES = ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'];
@@ -139,6 +139,8 @@
                 setPwDialog({ message, onOk, correctPw: getMonthPassword(dateStr) });
             };
             const GAS_URL = localStorage.getItem('gas_url') || '';
+            const [shiftInfo, setShiftInfo] = useState([]); // [{kubun, start, end}, ...]
+            const [shiftLoading, setShiftLoading] = useState(false);
 
             const showConfirm = (message, onOk, isDanger = false, okLabel = '送信する') => {
                 setConfirmDialog({ message, onOk, isDanger, okLabel });
@@ -171,8 +173,8 @@
                     alert('送信するデータがありません。');
                     return;
                 }
-                if (hasUnapprovedTour) {
-                    alert('ツアーの記録に未承認のものがあります。\n履歴タブで、まっちゃんの承認を受けてから送信してください。');
+                if (hasUnapprovedRecord) {
+                    alert('未承認の記録があります（ツアー、またはシフトと異なる時間のフロント勤務）。\n履歴タブで、まっちゃんの承認を受けてから送信してください。');
                     return;
                 }
 
@@ -182,6 +184,7 @@
                         setSendStatus('sending');
 
                         const byType = { フロント: {hours:0, amount:0}, カフェ: {hours:0, amount:0}, ツアー: {guests:0, amount:0}, 物販: {hours:0, amount:0}, 手入力: {amount:0} };
+                        const frontDates = [];
                         invoiceData.filtered.forEach(r => {
                             if (r.type === 'ツアー') {
                                 byType.ツアー.guests += r.guests || 0;
@@ -191,6 +194,7 @@
                             } else if (byType[r.type]) {
                                 byType[r.type].hours += parseFloat(r.hours || 0);
                                 byType[r.type].amount += r.amount;
+                                if (r.type === 'フロント') frontDates.push(r.date);
                             }
                         });
 
@@ -199,6 +203,7 @@
                             month: selectedMonth.replace('-', '年') + '月',
                             frontHours:  Math.round(byType.フロント.hours * 100) / 100,
                             frontAmount: byType.フロント.amount,
+                            frontDates:  frontDates,
                             cafeHours:   Math.round(byType.カフェ.hours * 100) / 100,
                             cafeAmount:  byType.カフェ.amount,
                             tourGuests:  byType.ツアー.guests,
@@ -254,7 +259,7 @@
                 endH: '17', endM: '00',
                 breakTime: '0',
                 tourGuests: '1',
-                tourType: 'レイビレッジツアー',
+                tourType: 'レイビレツアー・瞑想',
                 manualAmount: '0'
             });
 
@@ -290,6 +295,23 @@
                 }
             }, [profile.isCafeOnly]);
 
+            // 勤務形態がフロントのとき、日付・名前からシフトを自動検索
+            useEffect(() => {
+                const personName = (formData.name || profile.name || '').trim();
+                if (formData.type !== 'フロント' || !personName || !formData.date || !GAS_URL) {
+                    setShiftInfo([]);
+                    return;
+                }
+                setShiftLoading(true);
+                fetch(`${GAS_URL}?action=getShift&name=${encodeURIComponent(personName)}&date=${formData.date}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        setShiftInfo(data.status === 'ok' ? data.shifts : []);
+                    })
+                    .catch(() => setShiftInfo([]))
+                    .finally(() => setShiftLoading(false));
+            }, [formData.type, formData.date, formData.name, profile.name, GAS_URL]);
+
             const handleSaveProfile = () => {
                 setProfileSaved(true);
                 setTimeout(() => setProfileSaved(false), 2000);
@@ -298,7 +320,7 @@
             const currentCalculation = useMemo(() => {
                 if (formData.type === 'ツアー') {
                     const count = parseInt(formData.tourGuests || 0);
-                    const rate = TOUR_RATES[formData.tourType || 'レイビレッジツアー'];
+                    const rate = TOUR_RATES[formData.tourType || 'レイビレツアー・瞑想'];
                     return { hours: null, guests: count, amount: count * rate };
                 } else if (formData.type === '手入力') {
                     return { hours: null, guests: null, amount: parseInt(formData.manualAmount || 0) };
@@ -317,6 +339,19 @@
 
             const handleAddRecord = () => {
                 const calc = currentCalculation;
+                // フロントの場合、シフトと完全に一致しているか判定（一致していれば承認不要）
+                let matchesShift = true;
+                if (formData.type === 'フロント') {
+                    if (shiftInfo.length === 0) {
+                        matchesShift = false; // シフト登録がない＝要承認
+                    } else {
+                        const shiftStart = shiftInfo[0].start;
+                        const shiftEnd = shiftInfo[shiftInfo.length - 1].end;
+                        const inputStart = `${formData.startH}:${formData.startM}`;
+                        const inputEnd = `${formData.endH}:${formData.endM}`;
+                        matchesShift = (inputStart === shiftStart && inputEnd === shiftEnd);
+                    }
+                }
                 const newRecord = {
                     id: Date.now(),
                     date: formData.date,
@@ -328,9 +363,10 @@
                     breakTime: (formData.type === 'ツアー' || formData.type === '手入力') ? '0' : formData.breakTime,
                     hours: calc.hours,
                     guests: calc.guests,
-                    tourType: formData.type === 'ツアー' ? (formData.tourType || 'レイビレッジツアー') : '',
+                    tourType: formData.type === 'ツアー' ? (formData.tourType || 'レイビレツアー・瞑想') : '',
                     amount: calc.amount,
-                    manualLabel: formData.type === '手入力' ? (formData.manualLabel || '') : ''
+                    manualLabel: formData.type === '手入力' ? (formData.manualLabel || '') : '',
+                    needsApproval: formData.type === 'ツアー' || (formData.type === 'フロント' && !matchesShift)
                 };
                 setRecords([newRecord, ...records]);
                 setIsSuccess(true);
@@ -353,8 +389,8 @@
             }, [records, selectedMonth]);
 
             // 対象月に「未承認のツアー」が含まれているか
-            const hasUnapprovedTour = useMemo(() => {
-                return invoiceData.filtered.some(r => r.type === 'ツアー' && !approvedIds.includes(r.id));
+            const hasUnapprovedRecord = useMemo(() => {
+                return invoiceData.filtered.some(r => r.needsApproval && !approvedIds.includes(r.id));
             }, [invoiceData, approvedIds]);
 
             // 当月・先月のみ入力可能
@@ -600,7 +636,7 @@
                                                         <label className="block text-[10px] font-black uppercase mb-2 tracking-widest" style={{color: '#5e8f72'}}>ツアー種類</label>
                                                         <div className="grid grid-cols-2 gap-1 p-1 rounded-2xl" style={{background: '#cfe9da'}}>
                                                             {Object.keys(TOUR_RATES).map(tn => (
-                                                                <button key={tn} onClick={() => setFormData({...formData, tourType: tn})} className="py-3 px-1 text-[11px] font-black rounded-xl transition" style={(formData.tourType || 'レイビレッジツアー') === tn ? {background: 'white', color: '#8fc7a8', boxShadow: '0 1px 4px rgba(0,0,0,0.1)'} : {color: '#5e8f72'}}>
+                                                                <button key={tn} onClick={() => setFormData({...formData, tourType: tn})} className="py-3 px-1 text-[11px] font-black rounded-xl transition" style={(formData.tourType || 'レイビレツアー・瞑想') === tn ? {background: 'white', color: '#8fc7a8', boxShadow: '0 1px 4px rgba(0,0,0,0.1)'} : {color: '#5e8f72'}}>
                                                                     {tn}<br/><span style={{fontSize: '9px', opacity: 0.7}}>（¥{TOUR_RATES[tn].toLocaleString()}/名）</span>
                                                                 </button>
                                                             ))}
@@ -638,6 +674,30 @@
                                     </div>
 
                                     {(formData.type !== 'ツアー' && formData.type !== '手入力') && (
+                                        <>
+                                        {formData.type === 'フロント' && (
+                                            <div className="pt-4">
+                                                {shiftLoading ? (
+                                                    <p className="text-xs" style={{color: '#a3c9b3'}}>シフト確認中…</p>
+                                                ) : shiftInfo.length > 0 ? (
+                                                    <div className="p-4 rounded-2xl" style={{background: '#fff8ec', border: '1px solid #f5d394'}}>
+                                                        <p className="text-xs font-black mb-2" style={{color: '#8a6a2a'}}>📋 シフト：{shiftInfo.map(s => s.kubun).join('')}（{shiftInfo[0].start}〜{shiftInfo[shiftInfo.length-1].end}）</p>
+                                                        <button
+                                                            onClick={() => {
+                                                                const start = shiftInfo[0].start.split(':');
+                                                                const end = shiftInfo[shiftInfo.length-1].end.split(':');
+                                                                setFormData(f => ({...f, startH: start[0], startM: start[1], endH: end[0], endM: end[1]}));
+                                                            }}
+                                                            className="text-xs font-black px-4 py-2 rounded-xl text-white"
+                                                            style={{background: 'linear-gradient(135deg, #e0a878, #e8bc94)'}}
+                                                        >この時間を使う</button>
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-xs" style={{color: '#a3c9b3'}}>この日のシフト登録はありません（手入力してください）</p>
+                                                )}
+                                                <p className="text-xs font-bold mt-2" style={{color: '#e05050'}}>※ シフトと異なる時間で入力した場合は、まっちゃんの承認が必要です</p>
+                                            </div>
+                                        )}
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t-2" style={{borderColor: '#cfe9da'}}>
                                             <div>
                                                 <label className="block text-[10px] font-black uppercase mb-3 tracking-widest" style={{color: '#5e8f72'}}>開始時間</label>
@@ -662,6 +722,7 @@
                                                 </div>
                                             </div>
                                         </div>
+                                        </>
                                     )}
 
                                     <div className="p-8 rounded-[2rem] flex flex-col md:flex-row justify-between items-center gap-4" style={{background: '#f0faf3', border: '2px solid #cfe9da'}}>
@@ -762,7 +823,7 @@
                                                     <p className="font-black text-xl tracking-tighter" style={{color: '#3d6e54'}}>¥{r.amount.toLocaleString()}</p>
                                                     {!isApproved ? (
                                                         <div className="flex gap-2 justify-end mt-1">
-                                                            {r.type === 'ツアー' && (
+                                                            {r.needsApproval && (
                                                                 <button onClick={() => askPassword(r.date, 'この記録を承認しますか？\n（まっちゃん確認用パスワードが必要です）', () => setApprovedIds(prev => [...prev, r.id]))} className="text-[10px] font-black hover:underline" style={{color: '#e05050', background: 'none', border: 'none', cursor: 'pointer'}}>承認</button>
                                                             )}
                                                             <button onClick={() => setRecords(records.filter(x => x.id !== r.id))} className="text-[10px] font-black hover:underline" style={{color: '#a8d6bc', background: 'none', border: 'none', cursor: 'pointer'}}>削除</button>
@@ -860,7 +921,7 @@
                             <div className="space-y-6">
                                 <div className="p-8 rounded-3xl shadow-xl no-print mb-6" style={{background: '#fbfdfc', border: '1px solid #cfe9da'}}>
                                     <h2 className="text-xs font-black uppercase tracking-widest mb-1" style={{color: '#5e8f72'}}>請求書発行設定</h2><div className="space-y-1">
-<p style={{color:'red', fontWeight:'bold', fontSize:'12px', marginTop:'1px'}}>提出期限：毎月10日</p>
+<p style={{color:'red', fontWeight:'bold', fontSize:'12px', marginTop:'1px'}}>⚠️ 提出期限：毎月10日</p>
 
 <div><label className="text-[10px] font-black uppercase tracking-widest block mb-2" style={{color: '#5e8f72'}}>対象月</label>
                                             <div className="flex items-center gap-3">
@@ -883,8 +944,8 @@
                                     {getMissingFields().length > 0 && (
                                         <p className="text-xs font-bold mt-2" style={{color: '#e05050'}}>⚠ 未登録：{getMissingFields().join('・')}</p>
                                     )}
-                                    {selectedMonth && hasUnapprovedTour && (
-                                        <p className="text-base font-bold mt-3 text-center" style={{color: '#e05050'}}>⚠ ツアーに未承認の記録があります。<br className="md:hidden" />履歴タブでまっちゃんの承認を受けてください。</p>
+                                    {selectedMonth && hasUnapprovedRecord && (
+                                        <p className="text-base font-bold mt-3 text-center" style={{color: '#e05050'}}>⚠ 未承認の記録があります。<br className="md:hidden" />履歴タブでまっちゃんの承認を受けてください。</p>
                                     )}
                                 </div>
 
@@ -1011,15 +1072,15 @@
                                     {/* 送信ボタン */}
                                     <button
                                         onClick={handleSendInvoice}
-                                        disabled={sendStatus === 'sending' || hasUnapprovedTour}
+                                        disabled={sendStatus === 'sending' || hasUnapprovedRecord}
                                         className="w-full py-5 rounded-3xl font-black text-sm md:text-lg shadow-xl transition transform hover:-translate-y-1 whitespace-nowrap overflow-hidden text-ellipsis px-2"
                                         style={{
-                                            background: hasUnapprovedTour ? '#cccccc' : sendStatus === 'ok' ? '#5b9e6e' : sendStatus === 'error' ? '#e05050' : 'linear-gradient(135deg, #4ba87f, #7fc8a3)',
+                                            background: hasUnapprovedRecord ? '#cccccc' : sendStatus === 'ok' ? '#5b9e6e' : sendStatus === 'error' ? '#e05050' : 'linear-gradient(135deg, #4ba87f, #7fc8a3)',
                                             color: 'white',
-                                            cursor: hasUnapprovedTour ? 'not-allowed' : 'pointer'
+                                            cursor: hasUnapprovedRecord ? 'not-allowed' : 'pointer'
                                         }}
                                     >
-                                        {hasUnapprovedTour ? '🔒 ツアー未承認のため送信できません' : sendStatus === 'sending' ? '📤 送信中…' : sendStatus === 'ok' ? '✓ 送信完了しました' : sendStatus === 'error' ? '❌ 送信失敗（URLを確認してね）' : '📤 業務委託請求書（PDF）を送信する'}
+                                        {hasUnapprovedRecord ? '🔒 未承認のため送信できません' : sendStatus === 'sending' ? '📤 送信中…' : sendStatus === 'ok' ? '✓ 送信完了しました' : sendStatus === 'error' ? '❌ 送信失敗（URLを確認してね）' : '📤 業務委託請求書（PDF）を送信する'}
                                     </button>
 
                                     {/* 印刷リンク */}
