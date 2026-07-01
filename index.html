@@ -174,7 +174,7 @@
                     return;
                 }
                 if (hasUnapprovedRecord) {
-                    alert('未承認の記録があります（ツアー、またはシフトと異なる時間のフロント勤務）。\n履歴タブで、まっちゃんの承認を受けてから送信してください。');
+                    alert('未承認のツアー記録があります。\n履歴タブで、まっちゃんの承認を受けてから送信してください。');
                     return;
                 }
 
@@ -339,23 +339,10 @@
 
             const handleAddRecord = () => {
                 const calc = currentCalculation;
-                // フロントの場合、シフトと完全に一致しているか判定（一致していれば承認不要）
-                let matchesShift = true;
-                if (formData.type === 'フロント') {
-                    if (shiftInfo.length === 0) {
-                        matchesShift = false; // シフト登録がない＝要承認
-                    } else {
-                        const shiftStart = shiftInfo[0].start;
-                        const shiftEnd = shiftInfo[shiftInfo.length - 1].end;
-                        const inputStart = `${formData.startH}:${formData.startM}`;
-                        const inputEnd = `${formData.endH}:${formData.endM}`;
-                        matchesShift = (inputStart === shiftStart && inputEnd === shiftEnd);
-                    }
-                }
                 const newRecord = {
                     id: Date.now(),
                     date: formData.date,
-                    registeredAt: new Date().toLocaleString('ja-JP'), // 登録日時
+                    registeredAt: new Date().toLocaleString('ja-JP'),
                     name: formData.name || profile.name,
                     type: formData.type,
                     startTime: (formData.type === 'ツアー' || formData.type === '手入力') ? '-' : `${formData.startH}:${formData.startM}`,
@@ -366,7 +353,7 @@
                     tourType: formData.type === 'ツアー' ? (formData.tourType || 'レイビレツアー・瞑想') : '',
                     amount: calc.amount,
                     manualLabel: formData.type === '手入力' ? (formData.manualLabel || '') : '',
-                    needsApproval: formData.type === 'ツアー' || (formData.type === 'フロント' && !matchesShift)
+                    needsApproval: formData.type === 'ツアー'
                 };
                 setRecords([newRecord, ...records]);
                 setIsSuccess(true);
@@ -695,7 +682,6 @@
                                                 ) : (
                                                     <p className="text-xs" style={{color: '#a3c9b3'}}>この日のシフト登録はありません（手入力してください）</p>
                                                 )}
-                                                <p className="text-xs font-bold mt-2" style={{color: '#e05050'}}>※ シフトと異なる時間で入力した場合は、まっちゃんの承認が必要です</p>
                                             </div>
                                         )}
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t-2" style={{borderColor: '#cfe9da'}}>
@@ -945,7 +931,7 @@
                                         <p className="text-xs font-bold mt-2" style={{color: '#e05050'}}>⚠ 未登録：{getMissingFields().join('・')}</p>
                                     )}
                                     {selectedMonth && hasUnapprovedRecord && (
-                                        <p className="text-base font-bold mt-3 text-center" style={{color: '#e05050'}}>⚠ 未承認の記録があります。<br className="md:hidden" />履歴タブでまっちゃんの承認を受けてください。</p>
+                                        <p className="text-base font-bold mt-3 text-center" style={{color: '#e05050'}}>⚠ 未承認のツアー記録があります。<br className="md:hidden" />履歴タブでまっちゃんの承認を受けてください。</p>
                                     )}
                                 </div>
 
