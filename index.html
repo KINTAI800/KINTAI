@@ -124,6 +124,7 @@
                 localStorage.setItem('approved_ids_v1', JSON.stringify(approvedIds));
             }, [approvedIds]);
             const [pwDialog, setPwDialog] = useState(null); // {message, onOk}
+            const [extraItems, setExtraItems] = useState([]); // [{label, amount}] 追加項目（毎月リセット）
             const [pwInput, setPwInput] = useState('');
             const [pwError, setPwError] = useState(false);
 
@@ -269,6 +270,11 @@
             });
             const [historyShowAll, setHistoryShowAll] = useState(false); // 履歴タブの「全件」表示フラグ（このタブ専用）
 
+            // 月が変わったら追加項目をリセット
+            useEffect(() => {
+                setExtraItems([]);
+            }, [selectedMonth]);
+
             useEffect(() => {
                 localStorage.setItem('staff_profile_v1', JSON.stringify(profile));
             }, [profile]);
@@ -364,7 +370,9 @@
                 if (!selectedMonth) return { filtered: [], totalAmount: 0, subTotal: 0, tax: 0, totalHours: 0 };
                 const filtered = records.filter(r => r.date.startsWith(selectedMonth))
                     .sort((a, b) => new Date(a.date) - new Date(b.date));
-                const totalAmount = filtered.reduce((sum, r) => sum + (r.amount || 0), 0);
+                const recordsTotal = filtered.reduce((sum, r) => sum + (r.amount || 0), 0);
+                const extraTotal = extraItems.reduce((sum, item) => sum + (parseInt(item.amount) || 0), 0);
+                const totalAmount = recordsTotal + extraTotal;
                 const subTotal = Math.round(totalAmount / 1.1);
                 return {
                     filtered,
@@ -373,7 +381,7 @@
                     tax: totalAmount - subTotal,
                     totalHours: filtered.reduce((sum, r) => sum + (r.hours ? parseFloat(r.hours) : 0), 0)
                 };
-            }, [records, selectedMonth]);
+            }, [records, selectedMonth, extraItems]);
 
             // 対象月に「未承認のツアー」が含まれているか
             const hasUnapprovedRecord = useMemo(() => {
@@ -935,6 +943,67 @@
                                     )}
                                 </div>
 
+                                {/* 追加項目 */}
+                                {selectedMonth && getMissingFields().length === 0 && (
+                                    <div className="p-6 rounded-3xl shadow-sm" style={{background: '#fbfdfc', border: '1px solid #cfe9da'}}>
+                                        <div className="flex justify-between items-center mb-4">
+                                            <h3 className="text-xs font-black uppercase tracking-widest" style={{color: '#5e8f72'}}>追加項目（任意）</h3>
+                                            <button
+                                                onClick={() => setExtraItems(prev => [...prev, {label: '', amount: ''}])}
+                                                className="text-xs font-black px-4 py-2 rounded-xl text-white"
+                                                style={{background: 'linear-gradient(135deg, #5a9c79, #7fc8a3)'}}
+                                            >＋ 項目を追加</button>
+                                        </div>
+                                        {extraItems.length === 0 && (
+                                            <p className="text-xs text-center" style={{color: '#bfe3cd'}}>追加の請求項目がある場合は「＋ 項目を追加」を押してね</p>
+                                        )}
+                                        {extraItems.map((item, idx) => (
+                                            <div key={idx} className="flex gap-2 mb-3 items-center">
+                                                <input
+                                                    type="text"
+                                                    placeholder="項目名（例：交通費）"
+                                                    value={item.label}
+                                                    onChange={(e) => {
+                                                        const updated = [...extraItems];
+                                                        updated[idx] = {...updated[idx], label: e.target.value};
+                                                        setExtraItems(updated);
+                                                    }}
+                                                    className="flex-1 p-3 border-2 rounded-xl font-bold outline-none text-sm"
+                                                    style={{background: '#f3faf6', borderColor: '#cfe9da'}}
+                                                />
+                                                <div className="flex items-center gap-1">
+                                                    <span className="font-bold text-sm" style={{color: '#5e8f72'}}>¥</span>
+                                                    <input
+                                                        type="number"
+                                                        placeholder="金額"
+                                                        value={item.amount}
+                                                        onChange={(e) => {
+                                                            const updated = [...extraItems];
+                                                            updated[idx] = {...updated[idx], amount: e.target.value};
+                                                            setExtraItems(updated);
+                                                        }}
+                                                        className="w-28 p-3 border-2 rounded-xl font-bold outline-none text-sm text-right"
+                                                        style={{background: '#f3faf6', borderColor: '#cfe9da'}}
+                                                        min="0"
+                                                    />
+                                                </div>
+                                                <button
+                                                    onClick={() => setExtraItems(prev => prev.filter((_, i) => i !== idx))}
+                                                    className="text-xs font-black"
+                                                    style={{color: '#a8d6bc', background: 'none', border: 'none', cursor: 'pointer'}}
+                                                >✕</button>
+                                            </div>
+                                        ))}
+                                        {extraItems.length > 0 && (
+                                            <div className="text-right mt-2">
+                                                <span className="text-xs font-black" style={{color: '#5e8f72'}}>
+                                                    追加合計：¥{extraItems.reduce((s, i) => s + (parseInt(i.amount) || 0), 0).toLocaleString()}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                                 {/* 全件時・マスト未入力時は請求書非表示 */}
                                 {!selectedMonth ? (
                                     <div className="p-16 text-center rounded-3xl" style={{background: '#fbfdfc', border: '1px solid #cfe9da'}}>
@@ -1008,12 +1077,24 @@
                                                 </td>
                                                 <td style={{padding: '16px 4px', textAlign: 'right', color: '#666666', fontSize: '15px'}}>1</td>
                                                 <td style={{padding: '16px 4px', textAlign: 'right', color: '#666666', fontSize: '15px'}}>
-                                                    ¥{invoiceData.subTotal.toLocaleString()}
+                                                    ¥{Math.round(invoiceData.totalAmount / 1.1 - extraItems.reduce((s,i) => s+(parseInt(i.amount)||0), 0) / 1.1).toLocaleString()}
                                                 </td>
                                                 <td style={{padding: '16px 4px', textAlign: 'right', fontWeight: '500', color: '#000000', fontSize: '15px'}}>
-                                                    ¥{invoiceData.totalAmount.toLocaleString()}
+                                                    ¥{(invoiceData.totalAmount - extraItems.reduce((s,i) => s+(parseInt(i.amount)||0), 0)).toLocaleString()}
                                                 </td>
                                             </tr>
+                                            {extraItems.filter(i => i.label && parseInt(i.amount) > 0).map((item, idx) => (
+                                                <tr key={idx} style={{borderBottom: '0.5px solid #cccccc'}}>
+                                                    <td style={{padding: '16px 4px', fontWeight: '500', color: '#000000', fontSize: '15px'}}>{item.label}</td>
+                                                    <td style={{padding: '16px 4px', textAlign: 'right', color: '#666666', fontSize: '15px'}}>1</td>
+                                                    <td style={{padding: '16px 4px', textAlign: 'right', color: '#666666', fontSize: '15px'}}>
+                                                        ¥{Math.round((parseInt(item.amount)||0) / 1.1).toLocaleString()}
+                                                    </td>
+                                                    <td style={{padding: '16px 4px', textAlign: 'right', fontWeight: '500', color: '#000000', fontSize: '15px'}}>
+                                                        ¥{(parseInt(item.amount)||0).toLocaleString()}
+                                                    </td>
+                                                </tr>
+                                            ))}
                                         </tbody>
                                     </table>
 
