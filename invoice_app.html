@@ -456,7 +456,7 @@ function App() {
                                 </div>
 
                                 {/* PDFボタン */}
-                                <button onClick={() => window.print()} style={{width: '100%', padding: '18px', borderRadius: '16px', border: 'none', fontWeight: '900', fontSize: '16px', color: 'white', cursor: 'pointer', background: 'linear-gradient(135deg, #4a7cc9, #7aaee0)', boxShadow: '0 4px 16px rgba(74,124,201,0.3)'}}>
+                                <button className="no-print" onClick={() => window.print()} style={{width: '100%', padding: '18px', borderRadius: '16px', border: 'none', fontWeight: '900', fontSize: '16px', color: 'white', cursor: 'pointer', background: 'linear-gradient(135deg, #4a7cc9, #7aaee0)', boxShadow: '0 4px 16px rgba(74,124,201,0.3)'}}>
                                     📄 PDFを出す / LINEで送る
                                 </button>
                             </>
