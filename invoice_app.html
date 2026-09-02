@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>請求書作成アプリ</title>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background: #f0f5ff;
+            min-height: 100vh;
+            color: #1a2a4a;
+        }
+        :root {
+            --blue: #4a7cc9;
+            --blue-light: #7aaee0;
+            --blue-pale: #dceeff;
+            --blue-bg: #f0f5ff;
+            --blue-border: #b8d4f5;
+            --text: #1a2a4a;
+            --text-muted: #6b8ab0;
+            --white: #ffffff;
+        }
+        input, select, button { font-family: inherit; }
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; }
+            #invoice-box { box-shadow: none !important; border: none !important; }
+        }
+        @media screen and (max-width: 640px) {
+            #invoice-box.invoice-screen { padding: 16px 14px !important; }
+            #invoice-box.invoice-screen .inv-title { font-size: 24px !important; }
+            #invoice-box.invoice-screen .inv-to-name { font-size: 14px !important; white-space: nowrap !important; }
+            #invoice-box.invoice-screen .inv-to-note { font-size: 10px !important; white-space: nowrap !important; }
+            #invoice-box.invoice-screen .inv-from-name { font-size: 13px !important; }
+            #invoice-box.invoice-screen .inv-from-detail { font-size: 11px !important; }
+            #invoice-box.invoice-screen .inv-req-label { font-size: 12px !important; }
+            #invoice-box.invoice-screen .inv-req-amt { font-size: 20px !important; }
+            #invoice-box.invoice-screen table { font-size: 10.5px !important; }
+            #invoice-box.invoice-screen th { font-size: 9px !important; padding: 6px 2px !important; }
+            #invoice-box.invoice-screen td { font-size: 10.5px !important; padding: 10px 2px !important; }
+            #invoice-box.invoice-screen .inv-summary-row { font-size: 10.5px !important; }
+            #invoice-box.invoice-screen .inv-bank-grid { font-size: 11px !important; grid-template-columns: 64px 1fr !important; }
+            #invoice-box.invoice-screen .inv-bank-note { font-size: 10.5px !important; }
+            #invoice-box.invoice-screen .inv-footer { font-size: 10px !important; }
+        }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useMemo, useCallback } = React;
+
+const inputStyle = {
+    background: '#f5f9ff',
+    border: '2px solid var(--blue-border)',
+    color: 'var(--text)',
+    borderRadius: '12px',
+    padding: '12px 16px',
+    fontSize: '15px',
+    fontWeight: '600',
+    width: '100%',
+    outline: 'none',
+    transition: 'border-color 0.2s'
+};
+
+function App() {
+    const [currentTab, setCurrentTab] = useState('profile');
+    const [profile, setProfile] = useState(() => {
+        const saved = localStorage.getItem('invoice_app_profile_v1');
+        const defaults = {
+            name: '', zip: '', address: '', tel: '', invoiceNo: '',
+            bankName: '', bankCode: '', branchName: '', branchCode: '',
+            bankType: '普通', bankNumber: '', bankHolder: ''
+        };
+        return saved ? {...defaults, ...JSON.parse(saved)} : defaults;
+    });
+    const [profileSaved, setProfileSaved] = useState(false);
+    const [zipStatus, setZipStatus] = useState('');
+    const [records, setRecords] = useState(() => {
+        const saved = localStorage.getItem('invoice_app_records_v1');
+        return saved ? JSON.parse(saved) : [];
+    });
+    const [selectedMonth, setSelectedMonth] = useState(() => {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    });
+    const [form, setForm] = useState({
+        date: new Date().toISOString().slice(0, 10),
+        label: '',
+        amount: '',
+        separate: false
+    });
+    const [isSuccess, setIsSuccess] = useState(false);
+    const [confirmDialog, setConfirmDialog] = useState(null);
+
+    useEffect(() => {
+        localStorage.setItem('invoice_app_profile_v1', JSON.stringify(profile));
+    }, [profile]);
+
+    useEffect(() => {
+        localStorage.setItem('invoice_app_records_v1', JSON.stringify(records));
+    }, [records]);
+
+    const filtered = useMemo(() => {
+        return records
+            .filter(r => r.date.startsWith(selectedMonth))
+            .sort((a, b) => new Date(a.date) - new Date(b.date));
+    }, [records, selectedMonth]);
+
+    const totalAmount = useMemo(() => {
+        return filtered.reduce((s, r) => s + (r.amount || 0), 0);
+    }, [filtered]);
+
+    const handleSave = () => {
+        if (!form.label || !form.amount) return;
+        const newRecord = {
+            id: Date.now(),
+            date: form.date,
+            label: form.label,
+            amount: parseInt(form.amount) || 0,
+            separate: form.separate,
+            registeredAt: new Date().toLocaleString('ja-JP')
+        };
+        setRecords(prev => [newRecord, ...prev]);
+        setForm(f => ({...f, label: '', amount: '', separate: false}));
+        setIsSuccess(true);
+        setTimeout(() => setIsSuccess(false), 2000);
+    };
+
+    const handleDelete = (id) => {
+        setRecords(prev => prev.filter(r => r.id !== id));
+    };
+
+    const handleSaveProfile = () => {
+        setProfileSaved(true);
+        setTimeout(() => setProfileSaved(false), 2000);
+    };
+
+    const handleZipSearch = async () => {
+        const raw = profile.zip.replace(/-/g, '');
+        if (raw.length !== 7) return;
+        setZipStatus('loading');
+        try {
+            const res = await fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${raw}`);
+            const data = await res.json();
+            if (data.results) {
+                const r = data.results[0];
+                setProfile(p => ({...p, address: r.address1 + r.address2 + r.address3}));
+                setZipStatus('ok');
+            } else setZipStatus('err');
+        } catch { setZipStatus('err'); }
+        setTimeout(() => setZipStatus(''), 3000);
+    };
+
+    // 請求書用データ計算
+    const mainTotal = filtered.filter(r => !r.separate).reduce((s, r) => s + (r.amount || 0), 0);
+    const separateItems = filtered.filter(r => r.separate);
+    const mainSubTotal = Math.round(mainTotal / 1.1);
+    const grandSubTotal = Math.round(totalAmount / 1.1);
+    const grandTax = totalAmount - grandSubTotal;
+
+    const tabs = [
+        { id: 'profile', label: '登録', icon: '👤' },
+        { id: 'input', label: '入力', icon: '✏️' },
+        { id: 'history', label: '履歴', icon: '📋' },
+        { id: 'invoice', label: '請求書', icon: '📄' },
+    ];
+
+    return (
+        <div style={{maxWidth: '680px', margin: '0 auto', minHeight: '100vh', background: 'var(--blue-bg)'}}>
+            {/* ヘッダー */}
+            <header className="no-print" style={{background: 'linear-gradient(135deg, #4a7cc9, #7aaee0)', padding: '16px 20px', position: 'sticky', top: 0, zIndex: 20, boxShadow: '0 2px 12px rgba(74,124,201,0.3)'}}>
+                <div style={{fontWeight: '900', fontSize: '18px', color: 'white'}}>請求書作成アプリ</div>
+                {profile.name && <div style={{fontSize: '11px', color: 'rgba(255,255,255,0.75)', marginTop: '2px'}}>{profile.name} さん</div>}
+            </header>
+
+            {/* コンテンツ */}
+            <div style={{padding: '16px', paddingBottom: '90px'}}>
+
+                {/* ===== 登録タブ ===== */}
+                {currentTab === 'profile' && (
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
+                        <div style={{background: 'white', borderRadius: '20px', padding: '24px', boxShadow: '0 2px 12px rgba(74,124,201,0.08)'}}>
+                            <div style={{fontSize: '11px', fontWeight: '700', color: 'var(--blue)', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em'}}>個人情報</div>
+                            <div style={{display: 'flex', flexDirection: 'column', gap: '14px'}}>
+                                <div>
+                                    <label style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '6px'}}>氏名・屋号 <span style={{color: '#e05050'}}>＊</span></label>
+                                    <input style={inputStyle} value={profile.name} onChange={e => setProfile({...profile, name: e.target.value})} placeholder="例：山田 花子" />
+                                </div>
+                                <div>
+                                    <label style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '6px'}}>郵便番号 <span style={{color: '#e05050'}}>＊</span></label>
+                                    <div style={{display: 'flex', gap: '8px'}}>
+                                        <input style={{...inputStyle, flex: 1}} value={profile.zip} onChange={e => setProfile({...profile, zip: e.target.value})} placeholder="1234567" maxLength="8" />
+                                        <button onClick={handleZipSearch} style={{background: 'var(--blue)', color: 'white', border: 'none', borderRadius: '12px', padding: '0 14px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', flexShrink: 0}}>
+                                            {zipStatus === 'loading' ? '検索中' : zipStatus === 'ok' ? '✓ OK' : zipStatus === 'err' ? '❌' : '住所検索'}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '6px'}}>住所 <span style={{color: '#e05050'}}>＊</span></label>
+                                    <input style={inputStyle} value={profile.address} onChange={e => setProfile({...profile, address: e.target.value})} placeholder="番地・建物名まで" />
+                                </div>
+                                <div>
+                                    <label style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '6px'}}>電話番号 <span style={{color: '#e05050'}}>＊</span></label>
+                                    <input style={inputStyle} type="tel" value={profile.tel} onChange={e => setProfile({...profile, tel: e.target.value})} placeholder="090-1234-5678" />
+                                </div>
+                                <div>
+                                    <label style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '6px'}}>インボイス登録番号（任意）</label>
+                                    <input style={{...inputStyle, fontSize: '12px'}} value={profile.invoiceNo || ''} onChange={e => setProfile({...profile, invoiceNo: e.target.value})} placeholder="例：T1234567890123" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={{background: 'white', borderRadius: '20px', padding: '24px', boxShadow: '0 2px 12px rgba(74,124,201,0.08)'}}>
+                            <div style={{fontSize: '11px', fontWeight: '700', color: 'var(--blue)', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em'}}>振込先情報</div>
+                            <div style={{display: 'flex', flexDirection: 'column', gap: '14px'}}>
+                                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px'}}>
+                                    <div>
+                                        <label style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '6px'}}>銀行名</label>
+                                        <input style={inputStyle} value={profile.bankName} onChange={e => setProfile({...profile, bankName: e.target.value})} placeholder="○○銀行" />
+                                    </div>
+                                    <div>
+                                        <label style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '6px'}}>銀行番号</label>
+                                        <input style={{...inputStyle, fontSize: '12px'}} value={profile.bankCode || ''} onChange={e => setProfile({...profile, bankCode: e.target.value})} placeholder="0000" />
+                                    </div>
+                                </div>
+                                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px'}}>
+                                    <div>
+                                        <label style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '6px'}}>支店名</label>
+                                        <input style={inputStyle} value={profile.branchName} onChange={e => setProfile({...profile, branchName: e.target.value})} placeholder="○○支店" />
+                                    </div>
+                                    <div>
+                                        <label style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '6px'}}>支店番号</label>
+                                        <input style={{...inputStyle, fontSize: '12px'}} value={profile.branchCode || ''} onChange={e => setProfile({...profile, branchCode: e.target.value})} placeholder="000" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '6px'}}>口座種別 <span style={{color: '#e05050'}}>＊</span></label>
+                                    <select style={inputStyle} value={profile.bankType} onChange={e => setProfile({...profile, bankType: e.target.value})}>
+                                        <option>普通</option>
+                                        <option>当座</option>
+                                        <option>貯蓄</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '6px'}}>口座番号 <span style={{color: '#e05050'}}>＊</span></label>
+                                    <input style={inputStyle} value={profile.bankNumber} onChange={e => setProfile({...profile, bankNumber: e.target.value})} placeholder="1234567" />
+                                </div>
+                                <div>
+                                    <label style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '6px'}}>口座名義（カナ） <span style={{color: '#e05050'}}>＊</span></label>
+                                    <input style={inputStyle} value={profile.bankHolder} onChange={e => setProfile({...profile, bankHolder: e.target.value})} placeholder="ヤマダ ハナコ" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <button onClick={handleSaveProfile} style={{width: '100%', padding: '18px', borderRadius: '16px', border: 'none', fontWeight: '900', fontSize: '16px', color: 'white', cursor: 'pointer', background: profileSaved ? 'linear-gradient(135deg, #e07840, #f09060)' : 'linear-gradient(135deg, #4a7cc9, #7aaee0)', boxShadow: '0 4px 16px rgba(74,124,201,0.3)'}}>
+                            {profileSaved ? '✓ 保存しました' : '保存する'}
+                        </button>
+                    </div>
+                )}
+
+                {/* ===== 入力タブ ===== */}
+                {currentTab === 'input' && (
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
+                        <div style={{background: 'white', borderRadius: '20px', padding: '24px', boxShadow: '0 2px 12px rgba(74,124,201,0.08)'}}>
+                            <div style={{fontSize: '11px', fontWeight: '700', color: 'var(--blue)', marginBottom: '16px'}}>請求データ入力</div>
+                            <div style={{display: 'flex', flexDirection: 'column', gap: '14px'}}>
+                                <div>
+                                    <label style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '6px'}}>日付</label>
+                                    <input type="date" style={inputStyle} value={form.date} onChange={e => setForm({...form, date: e.target.value})} />
+                                </div>
+                                <div>
+                                    <label style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '6px'}}>金額（税込）</label>
+                                    <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                                        <span style={{fontWeight: '700', fontSize: '18px', color: 'var(--blue)'}}>¥</span>
+                                        <input type="number" style={inputStyle} value={form.amount} onChange={e => setForm({...form, amount: e.target.value})} placeholder="例：50000" min="0" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '6px'}}>内容</label>
+                                    <input type="text" style={inputStyle} value={form.label} onChange={e => setForm({...form, label: e.target.value})} placeholder="例：業務委託費、交通費など" />
+                                </div>
+                                <div style={{display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 14px', borderRadius: '12px', background: form.separate ? '#fff8ec' : '#f5f9ff', border: `1px solid ${form.separate ? '#f5d394' : 'var(--blue-border)'}`}}>
+                                    <input type="checkbox" id="separate" checked={form.separate} onChange={e => setForm({...form, separate: e.target.checked})} style={{width: '18px', height: '18px', cursor: 'pointer'}} />
+                                    <label htmlFor="separate" style={{fontSize: '12px', fontWeight: '700', cursor: 'pointer', color: form.separate ? '#8a6a2a' : 'var(--text-muted)'}}>
+                                        請求書に別項目として表示する
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 今回の入力確認 */}
+                        {form.amount && (
+                            <div style={{background: '#f0f8ff', borderRadius: '16px', padding: '16px 20px', border: '2px solid var(--blue-border)', textAlign: 'center'}}>
+                                <div style={{fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px'}}>今回の金額</div>
+                                <div style={{fontSize: '28px', fontWeight: '900', color: 'var(--blue)'}}>¥{(parseInt(form.amount)||0).toLocaleString()}</div>
+                                {form.label && <div style={{fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px'}}>{form.label}</div>}
+                            </div>
+                        )}
+
+                        <button onClick={handleSave} disabled={!form.label || !form.amount} style={{width: '100%', padding: '18px', borderRadius: '16px', border: 'none', fontWeight: '900', fontSize: '16px', color: 'white', cursor: 'pointer', background: isSuccess ? 'linear-gradient(135deg, #e07840, #f09060)' : (!form.label || !form.amount) ? '#c8d8f0' : 'linear-gradient(135deg, #4a7cc9, #7aaee0)', boxShadow: (!form.label || !form.amount) ? 'none' : '0 4px 16px rgba(74,124,201,0.3)'}}>
+                            {isSuccess ? '✓ 記録しました' : '記録する'}
+                        </button>
+                    </div>
+                )}
+
+                {/* ===== 履歴タブ ===== */}
+                {currentTab === 'history' && (
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
+                        <div style={{background: 'white', borderRadius: '16px', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '12px', boxShadow: '0 2px 8px rgba(74,124,201,0.08)'}}>
+                            <span style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', whiteSpace: 'nowrap'}}>表示月</span>
+                            <input type="month" style={{...inputStyle, padding: '8px 12px', fontSize: '13px', flex: 1}} value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} />
+                        </div>
+
+                        {filtered.length > 0 && (
+                            <div style={{padding: '0 4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                                <span style={{fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700'}}>{filtered.length}件</span>
+                                <span style={{fontSize: '14px', fontWeight: '900', color: 'var(--blue)'}}>合計 ¥{totalAmount.toLocaleString()}</span>
+                            </div>
+                        )}
+
+                        {filtered.length === 0 ? (
+                            <div style={{padding: '60px 20px', textAlign: 'center', background: 'white', borderRadius: '20px', color: 'var(--text-muted)'}}>データがありません</div>
+                        ) : filtered.map(r => (
+                            <div key={r.id} style={{background: 'white', borderRadius: '16px', padding: '16px 20px', boxShadow: '0 2px 8px rgba(74,124,201,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                                <div>
+                                    <div style={{fontSize: '13px', fontWeight: '700', color: 'var(--text)'}}>{r.label}</div>
+                                    <div style={{fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px'}}>{r.date}{r.separate ? ' · 別項目' : ''}</div>
+                                </div>
+                                <div style={{textAlign: 'right'}}>
+                                    <div style={{fontSize: '16px', fontWeight: '900', color: 'var(--blue)'}}>¥{r.amount.toLocaleString()}</div>
+                                    <button onClick={() => handleDelete(r.id)} style={{fontSize: '10px', color: '#aac4e8', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '700', marginTop: '2px'}}>削除</button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* ===== 請求書タブ ===== */}
+                {currentTab === 'invoice' && (
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
+                        <div style={{background: 'white', borderRadius: '16px', padding: '16px 20px', boxShadow: '0 2px 8px rgba(74,124,201,0.08)'}}>
+                            <div style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '8px'}}>対象月</div>
+                            <input type="month" style={{...inputStyle, padding: '10px 14px'}} value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} />
+                        </div>
+
+                        {filtered.length === 0 ? (
+                            <div style={{padding: '60px 20px', textAlign: 'center', background: 'white', borderRadius: '20px', color: 'var(--text-muted)'}}>この月のデータがありません</div>
+                        ) : (
+                            <>
+                                {/* 請求書プレビュー */}
+                                <div id="invoice-box" className="invoice-screen" style={{background: 'white', border: '1px solid #cccccc', padding: '40px 48px', boxShadow: '0 4px 24px rgba(0,0,0,0.08)', minHeight: '297mm', borderRadius: '4px'}}>
+                                    {/* タイトル */}
+                                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px'}}>
+                                        <div>
+                                            <div className="inv-title" style={{fontSize: '36px', fontWeight: '500', color: '#000'}}>請求書</div>
+                                            <div style={{fontSize: '12px', color: '#666', marginTop: '3px'}}>INVOICE</div>
+                                        </div>
+                                        <div style={{textAlign: 'right'}}>
+                                            <div style={{fontSize: '12px', color: '#666', marginBottom: '3px'}}>発行日</div>
+                                            <div style={{fontSize: '14px', fontWeight: '500'}}>{new Date().toLocaleDateString('ja-JP')}</div>
+                                        </div>
+                                    </div>
+                                    <hr style={{border: 'none', borderTop: '0.5px solid #ccc', margin: '16px 0'}} />
+
+                                    {/* 請求先・請求人 */}
+                                    <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '20px'}}>
+                                        <div>
+                                            <div style={{fontSize: '12px', color: '#666', marginBottom: '4px'}}>請求先</div>
+                                            <div className="inv-to-name" style={{fontSize: '20px', fontWeight: '500'}}>株式会社イジュン 御中</div>
+                                            <div className="inv-to-note" style={{fontSize: '13px', color: '#666', marginTop: '10px'}}>下記の通り、ご請求申し上げます。</div>
+                                        </div>
+                                        <div style={{textAlign: 'right'}}>
+                                            <div style={{fontSize: '12px', color: '#666', marginBottom: '4px'}}>請求人</div>
+                                            <div className="inv-from-name" style={{fontSize: '16px', fontWeight: '500'}}>{profile.name || '（未登録）'}</div>
+                                            {profile.zip && <div className="inv-from-detail" style={{fontSize: '13px', color: '#666'}}>〒{profile.zip}</div>}
+                                            {profile.address && <div className="inv-from-detail" style={{fontSize: '13px', color: '#666'}}>{profile.address}</div>}
+                                            {profile.tel && <div className="inv-from-detail" style={{fontSize: '13px', color: '#666'}}>TEL: {profile.tel}</div>}
+                                            {profile.invoiceNo && <div className="inv-from-detail" style={{fontSize: '13px', color: '#666'}}>登録番号: {profile.invoiceNo}</div>}
+                                        </div>
+                                    </div>
+
+                                    {/* ご請求金額 */}
+                                    <div style={{display: 'flex', alignItems: 'baseline', gap: '20px', padding: '14px 0 10px', marginTop: '8px'}}>
+                                        <span className="inv-req-label" style={{fontSize: '15px', fontWeight: '500'}}>ご請求金額（税込）</span>
+                                        <span className="inv-req-amt" style={{fontSize: '26px', fontWeight: '500', letterSpacing: '-0.5px'}}>¥{totalAmount.toLocaleString()}-</span>
+                                    </div>
+                                    <hr style={{border: 'none', borderTop: '2px solid #000', margin: '0 0 16px'}} />
+
+                                    {/* 明細テーブル */}
+                                    <table style={{width: '100%', borderCollapse: 'collapse', marginBottom: '8px'}}>
+                                        <thead>
+                                            <tr style={{borderBottom: '0.5px solid #ccc'}}>
+                                                <th style={{fontSize: '12px', color: '#666', fontWeight: '400', padding: '8px 4px', textAlign: 'left'}}>項目・内容</th>
+                                                <th style={{fontSize: '12px', color: '#666', fontWeight: '400', padding: '8px 4px', textAlign: 'right'}}>数量</th>
+                                                <th style={{fontSize: '12px', color: '#666', fontWeight: '400', padding: '8px 4px', textAlign: 'right'}}>単価（税抜）</th>
+                                                <th style={{fontSize: '12px', color: '#666', fontWeight: '400', padding: '8px 4px', textAlign: 'right'}}>金額（税込）</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {/* 運営協力費（別項目以外の合計） */}
+                                            {mainTotal > 0 && (
+                                                <tr style={{borderBottom: '0.5px solid #ccc'}}>
+                                                    <td style={{padding: '16px 4px', fontWeight: '500', fontSize: '15px'}}>
+                                                        {selectedMonth.split('-')[0]}年{parseInt(selectedMonth.split('-')[1])}月 運営協力費
+                                                    </td>
+                                                    <td style={{padding: '16px 4px', textAlign: 'right', color: '#666', fontSize: '15px'}}>1</td>
+                                                    <td style={{padding: '16px 4px', textAlign: 'right', color: '#666', fontSize: '15px'}}>¥{mainSubTotal.toLocaleString()}</td>
+                                                    <td style={{padding: '16px 4px', textAlign: 'right', fontWeight: '500', fontSize: '15px'}}>¥{mainTotal.toLocaleString()}</td>
+                                                </tr>
+                                            )}
+                                            {/* 別項目 */}
+                                            {separateItems.map((r, idx) => (
+                                                <tr key={idx} style={{borderBottom: '0.5px solid #ccc'}}>
+                                                    <td style={{padding: '16px 4px', fontWeight: '500', fontSize: '15px'}}>{r.label}</td>
+                                                    <td style={{padding: '16px 4px', textAlign: 'right', color: '#666', fontSize: '15px'}}>1</td>
+                                                    <td style={{padding: '16px 4px', textAlign: 'right', color: '#666', fontSize: '15px'}}>¥{Math.round(r.amount / 1.1).toLocaleString()}</td>
+                                                    <td style={{padding: '16px 4px', textAlign: 'right', fontWeight: '500', fontSize: '15px'}}>¥{r.amount.toLocaleString()}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+
+                                    {/* 小計・消費税・合計 */}
+                                    <div className="inv-summary-row" style={{display: 'flex', justifyContent: 'flex-end', margin: '8px 0 20px'}}>
+                                        <div style={{width: '220px'}}>
+                                            <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#666', padding: '4px 0'}}>
+                                                <span>小計（税抜）</span><span>¥{grandSubTotal.toLocaleString()}</span>
+                                            </div>
+                                            <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#666', padding: '4px 0'}}>
+                                                <span>消費税（10%）</span><span>¥{grandTax.toLocaleString()}</span>
+                                            </div>
+                                            <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '15px', fontWeight: '500', borderTop: '0.5px solid #ccc', padding: '10px 0', marginTop: '4px'}}>
+                                                <span>合計（税込）</span><span>¥{totalAmount.toLocaleString()}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 振込先 */}
+                                    {(profile.bankName || profile.bankNumber) && (
+                                        <div style={{borderTop: '0.5px solid #ccc', borderBottom: '0.5px solid #ccc', padding: '14px 0', margin: '16px 0'}}>
+                                            <div className="inv-bank-note" style={{fontSize: '12px', color: '#666', marginBottom: '10px'}}>お手数ですが下記口座へお振り込みをお願い申し上げます。</div>
+                                            <div className="inv-bank-grid" style={{display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '5px 16px', fontSize: '13px'}}>
+                                                {profile.bankName && <><span style={{color: '#666'}}>銀行名</span><span style={{fontWeight: '500'}}>{profile.bankName}{profile.bankCode ? `（${profile.bankCode}）` : ''}</span></>}
+                                                {profile.branchName && <><span style={{color: '#666'}}>支店名</span><span style={{fontWeight: '500'}}>{profile.branchName}{profile.branchCode ? `（${profile.branchCode}）` : ''}</span></>}
+                                                {profile.bankType && <><span style={{color: '#666'}}>口座種別</span><span style={{fontWeight: '500'}}>{profile.bankType}</span></>}
+                                                {profile.bankNumber && <><span style={{color: '#666'}}>口座番号</span><span style={{fontWeight: '500'}}>{profile.bankNumber}</span></>}
+                                                {profile.bankHolder && <><span style={{color: '#666'}}>口座名義</span><span style={{fontWeight: '500'}}>{profile.bankHolder}</span></>}
+                                            </div>
+                                            <div style={{fontSize: '10px', color: '#888', marginTop: '10px'}}>※振込手数料につきましては御社のご負担にてお願い致します。</div>
+                                        </div>
+                                    )}
+
+                                    <div className="inv-footer" style={{textAlign: 'center', fontSize: '12px', color: '#666', marginTop: '16px'}}>
+                                        今後とも何卒よろしくお願いいたします。
+                                    </div>
+                                </div>
+
+                                {/* PDFボタン */}
+                                <button onClick={() => window.print()} style={{width: '100%', padding: '18px', borderRadius: '16px', border: 'none', fontWeight: '900', fontSize: '16px', color: 'white', cursor: 'pointer', background: 'linear-gradient(135deg, #4a7cc9, #7aaee0)', boxShadow: '0 4px 16px rgba(74,124,201,0.3)'}}>
+                                    📄 PDFを出す / LINEで送る
+                                </button>
+                            </>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* モバイルナビ */}
+            <div className="no-print" style={{position: 'fixed', bottom: 0, left: 0, right: 0, background: 'rgba(255,255,255,0.97)', borderTop: '1px solid var(--blue-border)', zIndex: 40, backdropFilter: 'blur(12px)'}}>
+                <div style={{display: 'flex', maxWidth: '680px', margin: '0 auto'}}>
+                    {tabs.map(t => (
+                        <button key={t.id} onClick={() => setCurrentTab(t.id)} style={{flex: 1, padding: '10px 0 12px', border: 'none', background: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px'}}>
+                            <span style={{fontSize: '20px'}}>{t.icon}</span>
+                            <span style={{fontSize: '10px', fontWeight: '700', color: currentTab === t.id ? 'var(--blue)' : '#aac4e8'}}>{t.label}</span>
+                        </button>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
