@@ -29,8 +29,21 @@
         input, select, button { font-family: inherit; }
         @media print {
             .no-print { display: none !important; }
-            body { background: white; }
-            #invoice-box { box-shadow: none !important; border: none !important; min-height: 0 !important; }
+            body { background: white !important; padding: 0 !important; margin: 0 !important; }
+            #invoice-box { box-shadow: none !important; border: none !important; min-height: 0 !important; padding: 20px !important; font-size: 13px !important; }
+            #invoice-box .inv-title { font-size: 36px !important; }
+            #invoice-box .inv-to-name { font-size: 20px !important; white-space: normal !important; }
+            #invoice-box .inv-to-note { font-size: 13px !important; white-space: normal !important; }
+            #invoice-box .inv-from-name { font-size: 16px !important; }
+            #invoice-box .inv-from-detail { font-size: 13px !important; }
+            #invoice-box .inv-req-label { font-size: 15px !important; }
+            #invoice-box .inv-req-amt { font-size: 26px !important; }
+            #invoice-box table { font-size: 13px !important; }
+            #invoice-box th { font-size: 12px !important; padding: 8px 4px !important; }
+            #invoice-box td { font-size: 15px !important; padding: 16px 4px !important; }
+            #invoice-box .inv-summary-row { font-size: 13px !important; }
+            #invoice-box .inv-bank-grid { font-size: 13px !important; grid-template-columns: 80px 1fr !important; }
+            #invoice-box .inv-bank-note { font-size: 12px !important; }
         }
         @media screen and (max-width: 640px) {
             #invoice-box.invoice-screen { padding: 16px 14px !important; }
@@ -474,6 +487,9 @@ function App() {
                             <span style={{fontSize: '10px', fontWeight: '700', color: currentTab === t.id ? 'var(--blue)' : '#aac4e8'}}>{t.label}</span>
                         </button>
                     ))}
+                </div>
+                <div style={{textAlign: 'left', paddingBottom: '4px', paddingLeft: '12px'}}>
+                    <span style={{fontSize: '9px', color: '#c0cfe8'}}>© 2026 依光智子</span>
                 </div>
             </div>
         </div>
