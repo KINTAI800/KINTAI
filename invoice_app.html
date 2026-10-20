@@ -1,646 +1,502 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>サポーターズサイト｜レイビレッジ</title>
-<style>
-:root{
-  color-scheme: light dark;
-  --bg1:#D8F3EA; --bg2:#FFEFC9;
-  --bg:#EEF5F1; --surface:#FFFFFF; --ink:#1B2A25; --muted:#586A62;
-  --forest:#0B7F74; --on-forest:#FFFFFF;
-  --btn:#D4432D; --on-btn:#FFFFFF;
-  --sun:#F0BE3E; --on-sun:#2A2208;
-  --line:#C9D8D1; --ok:#2F7A58; --err:#C2503F; --gray:#D5DBD7; --gray-ink:#66736D;
-}
-@media (prefers-color-scheme: dark){
-  :root{
-    --bg1:#0E1D1A; --bg2:#1F1A10;
-    --bg:#121A17; --surface:#1B2723; --ink:#E8EFEB; --muted:#9AAAA3;
-    --forest:#5FD1C0; --on-forest:#0B2A26;
-    --btn:#FF8A73; --on-btn:#2B0F0B;
-    --sun:#F0BE3E; --on-sun:#2A2208;
-    --line:#2F403A; --ok:#7FD1A6; --err:#F08A78; --gray:#2A3631; --gray-ink:#7F8F88;
-  }
-}
-*{box-sizing:border-box}
-body{
-  margin:0; color:var(--ink); min-height:100vh;
-  background:var(--bg1); background:linear-gradient(165deg,var(--bg1),var(--bg2)); background-attachment:fixed;
-  font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic",sans-serif;
-  line-height:1.7; -webkit-font-smoothing:antialiased;
-}
-.wrap{max-width:480px; margin:0 auto; padding:28px 20px 56px}
-.wrap.wide{max-width:760px}
-h1{font-size:26px; line-height:1.35; margin:0 0 6px; color:var(--forest); letter-spacing:.02em}
-h2{font-size:17px; margin:0 0 8px; color:var(--forest)}
-.brand{margin:0 0 4px; font-size:13px; color:var(--muted)}
-.lead{margin:0 0 26px; color:var(--muted); font-size:15px}
-fieldset{border:0; padding:0; margin:0 0 24px; min-width:0}
-legend{font-weight:700; font-size:16px; padding:0; margin-bottom:10px}
-.hint{margin:0 0 10px; font-size:13px; color:var(--muted)}
-.hidden{display:none !important}
-
-select,input[type=text],input[type=email],input[type=password],input[type=month]{
-  width:100%; font:inherit; font-size:18px; padding:14px 12px; border-radius:14px;
-  border:2px solid var(--line); background:var(--surface); color:var(--ink);
-}
-.stack > * + *{margin-top:10px}
-.stack label.f{display:block; font-size:13px; color:var(--muted); margin:14px 0 4px}
-select:focus-visible,input:focus-visible{outline:3px solid var(--sun); outline-offset:2px}
-
-/* ---- calendar ---- */
-.cal{background:var(--surface); border:2px solid var(--line); border-radius:18px; padding:12px 10px 10px}
-.calhead{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px}
-.calhead b{font-size:18px}
-.nav{
-  width:44px; height:40px; border-radius:12px; border:2px solid var(--line); background:transparent;
-  color:var(--ink); font:inherit; font-size:18px; cursor:pointer;
-}
-.nav:disabled{opacity:.3; cursor:not-allowed}
-.grid{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px}
-.wd{font-size:12px; text-align:center; color:var(--muted)}
-.wd.sat{color:#3C78B5} .wd.sun{color:var(--err)}
-button.day{
-  height:54px; padding:0; border-radius:10px; border:2px solid transparent; background:var(--bg);
-  color:var(--ink); font:inherit; font-size:15px; line-height:1.2; cursor:pointer;
-  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
-}
-button.day small{font-size:10px; line-height:1.1; color:var(--muted); min-height:11px}
-button.day.has small{color:var(--forest); font-weight:700}
-button.day.today{border-color:var(--forest)}
-button.day.sel{background:var(--forest); color:var(--on-forest)}
-button.day.sel small{color:var(--on-forest)}
-button.day.mine{background:var(--sun); color:var(--on-sun)}
-button.day.mine small{color:var(--on-sun)}
-button.day.closed{background:var(--gray); color:var(--gray-ink); cursor:not-allowed}
-button.day.closed small{color:var(--gray-ink)}
-button.day.past{background:transparent; color:var(--gray-ink); opacity:.55; cursor:not-allowed}
-button.day:focus-visible{outline:3px solid var(--sun); outline-offset:1px}
-.legend{display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:10px; font-size:12px; color:var(--muted)}
-.legend i{display:inline-block; width:12px; height:12px; border-radius:4px; vertical-align:-1px; margin-right:4px}
-.calnote{margin:8px 0 0; font-size:13px; color:var(--muted); min-height:20px}
-
-/* ---- times / meal ---- */
-.times{display:grid; grid-template-columns:1fr 1fr; gap:10px}
-.times label{display:block; font-size:13px; color:var(--muted); margin-bottom:4px}
-.meal{display:grid; gap:10px}
-.meal input{position:absolute; opacity:0; pointer-events:none}
-.opt{
-  display:block; padding:16px; border-radius:16px; cursor:pointer;
-  background:var(--surface); border:2px solid var(--line); font-weight:700; font-size:17px;
-}
-.meal input:checked + .opt{border-color:var(--sun); background:var(--sun); color:var(--on-sun)}
-.meal input:checked + .opt::before{content:"✓ "}
-.meal input:focus-visible + .opt{outline:3px solid var(--sun); outline-offset:2px}
-.chips{display:flex; flex-wrap:wrap; gap:8px; margin-top:8px}
-.chk input{position:absolute; opacity:0; pointer-events:none}
-.chk span{display:block; padding:10px 12px; border-radius:12px; border:2px solid var(--line); background:var(--surface); font-size:14px; cursor:pointer}
-.chk input:checked + span{border-color:var(--sun); background:var(--sun); color:var(--on-sun)}
-.chk input:checked + span::before{content:"✓ "}
-.chk input:focus-visible + span{outline:3px solid var(--sun); outline-offset:2px}
-
-.when{background:var(--surface); border-radius:18px; padding:12px 16px; margin-bottom:12px; border:2px solid var(--line); font-size:15px}
-.when strong{color:var(--forest)}
-.price{background:var(--surface); border:2px solid var(--line); border-radius:18px; padding:14px 18px; margin-bottom:16px}
-.price div{display:flex; justify-content:space-between; gap:12px; padding:4px 0}
-.price .total{border-top:1px solid var(--line); margin-top:6px; padding-top:10px; font-weight:700; font-size:20px; color:var(--forest)}
-.price p{margin:8px 0 0; font-size:14px; color:var(--muted)}
-
-button.go{
-  width:100%; font:inherit; font-size:17px; font-weight:700; padding:16px; border:0; border-radius:18px;
-  background:var(--btn); color:var(--on-btn); cursor:pointer; box-shadow:0 4px 0 rgba(0,0,0,.18);
-}
-button.go:active:not(:disabled){transform:translateY(2px); box-shadow:0 2px 0 rgba(0,0,0,.18)}
-button.go:disabled{opacity:.5; cursor:not-allowed; box-shadow:none}
-button.ghost,button.small{
-  font:inherit; border-radius:16px; cursor:pointer; background:transparent;
-  border:2px solid var(--line); color:var(--ink); padding:12px 16px;
-}
-button.ghost{width:100%; margin-top:10px}
-button:focus-visible{outline:3px solid var(--sun); outline-offset:3px}
-.err{color:var(--err); font-size:14px; min-height:22px; margin:0 0 8px}
-.linkrow{text-align:center; margin-top:26px}
-.linkrow button{border:0; background:none; color:var(--muted); font:inherit; font-size:13px; text-decoration:underline; cursor:pointer}
-
-/* ---- my applications ---- */
-.mine-box{margin:0 0 24px}
-.app{background:var(--surface); border:2px solid var(--line); border-radius:16px; padding:10px 14px; margin-bottom:8px; font-size:14px}
-.app b{color:var(--forest)}
-
-/* ---- done ---- */
-.done{text-align:center; padding-top:28px}
-.done .mark{width:72px; height:72px; margin:0 auto 14px; border-radius:50%; background:var(--ok); display:grid; place-items:center; color:#fff; font-size:36px}
-.card{text-align:left; background:var(--surface); border:2px solid var(--line); border-radius:18px; padding:16px 18px; margin:18px 0}
-.card div{display:flex; justify-content:space-between; gap:12px; padding:6px 0}
-.card div + div{border-top:1px solid var(--line)}
-.card dt{color:var(--muted); white-space:nowrap} .card dd{margin:0; font-weight:700; text-align:right; word-break:break-all}
-
-/* ---- admin ---- */
-.ctrl{display:grid; gap:10px; margin-bottom:16px}
-.ctrl .row{display:grid; grid-template-columns:1fr auto; gap:10px}
-.report h2{font-size:20px; margin:18px 0 6px}
-.stats{display:flex; flex-wrap:wrap; gap:8px 22px; margin:0 0 12px; font-size:15px}
-.stats b{font-size:18px}
-table{width:100%; border-collapse:collapse; font-size:13px; background:var(--surface)}
-th,td{border:1px solid var(--line); padding:7px 8px; text-align:left; vertical-align:top}
-th{background:var(--bg); font-weight:700}
-td.num,th.num{text-align:right; white-space:nowrap}
-.note{font-size:13px; color:var(--muted)}
-
-@media (prefers-reduced-motion: no-preference){
-  button.day,.opt{transition:background .12s, border-color .12s}
-}
-@media print{
-  :root{--bg:#fff; --surface:#fff; --ink:#000; --muted:#444; --forest:#000; --line:#888}
-  body{background:#fff; color:#000}
-  .no-print{display:none !important}
-  .wrap{max-width:none; padding:0}
-  th{background:#eee !important; -webkit-print-color-adjust:exact; print-color-adjust:exact}
-  tr{break-inside:avoid}
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>レイビレッジ請求書</title>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background: #f0f5ff;
+            min-height: 100vh;
+            color: #1a2a4a;
+        }
+        :root {
+            --blue: #4a7cc9;
+            --blue-light: #7aaee0;
+            --blue-pale: #dceeff;
+            --blue-bg: #f0f5ff;
+            --blue-border: #b8d4f5;
+            --text: #1a2a4a;
+            --text-muted: #6b8ab0;
+            --white: #ffffff;
+        }
+        input, select, button { font-family: inherit; }
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; padding: 0 !important; margin: 0 !important; }
+            #invoice-box { box-shadow: none !important; border: none !important; min-height: 0 !important; padding: 20px !important; font-size: 13px !important; }
+            #invoice-box .inv-title { font-size: 36px !important; }
+            #invoice-box .inv-to-name { font-size: 20px !important; white-space: normal !important; }
+            #invoice-box .inv-to-note { font-size: 13px !important; white-space: normal !important; }
+            #invoice-box .inv-from-name { font-size: 16px !important; }
+            #invoice-box .inv-from-detail { font-size: 13px !important; }
+            #invoice-box .inv-req-label { font-size: 15px !important; }
+            #invoice-box .inv-req-amt { font-size: 26px !important; }
+            #invoice-box table { font-size: 13px !important; }
+            #invoice-box th { font-size: 12px !important; padding: 8px 4px !important; }
+            #invoice-box td { font-size: 15px !important; padding: 16px 4px !important; }
+            #invoice-box .inv-summary-row { font-size: 13px !important; }
+            #invoice-box .inv-bank-grid { font-size: 13px !important; grid-template-columns: 80px 1fr !important; }
+            #invoice-box .inv-bank-note { font-size: 12px !important; }
+        }
+        @media screen and (max-width: 640px) {
+            #invoice-box.invoice-screen { padding: 16px 14px !important; }
+            #invoice-box.invoice-screen .inv-title { font-size: 24px !important; }
+            #invoice-box.invoice-screen .inv-to-name { font-size: 14px !important; white-space: nowrap !important; }
+            #invoice-box.invoice-screen .inv-to-note { font-size: 10px !important; white-space: nowrap !important; }
+            #invoice-box.invoice-screen .inv-from-name { font-size: 13px !important; }
+            #invoice-box.invoice-screen .inv-from-detail { font-size: 11px !important; }
+            #invoice-box.invoice-screen .inv-req-label { font-size: 12px !important; }
+            #invoice-box.invoice-screen .inv-req-amt { font-size: 20px !important; }
+            #invoice-box.invoice-screen table { font-size: 10.5px !important; }
+            #invoice-box.invoice-screen th { font-size: 9px !important; padding: 6px 2px !important; }
+            #invoice-box.invoice-screen td { font-size: 10.5px !important; padding: 10px 2px !important; }
+            #invoice-box.invoice-screen .inv-summary-row { font-size: 10.5px !important; }
+            #invoice-box.invoice-screen .inv-bank-grid { font-size: 11px !important; grid-template-columns: 64px 1fr !important; }
+            #invoice-box.invoice-screen .inv-bank-note { font-size: 10.5px !important; }
+            #invoice-box.invoice-screen .inv-footer { font-size: 10px !important; }
+        }
+    </style>
 </head>
 <body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useMemo, useCallback } = React;
 
-<!-- ============ 申込画面 ============ -->
-<div class="wrap" id="view-apply">
-  <form id="form" novalidate>
-    <p class="brand">レイビレッジ</p>
-    <h1>サポーターズサイト</h1>
-    <p class="lead">ボランティアに「参加したい」日を、カレンダーから選んでください。</p>
+const inputStyle = {
+    background: '#f5f9ff',
+    border: '2px solid var(--blue-border)',
+    color: 'var(--text)',
+    borderRadius: '12px',
+    padding: '12px 16px',
+    fontSize: '15px',
+    fontWeight: '600',
+    width: '100%',
+    outline: 'none',
+    transition: 'border-color 0.2s'
+};
 
-    <fieldset class="stack">
-      <legend>お申込みの方の情報</legend>
-      <label class="f" for="name" style="margin-top:0">お名前（本名）</label>
-      <input type="text" id="name" placeholder="例：山田 花子" autocomplete="name">
-      <label class="f" for="lineName">LINE表示名</label>
-      <input type="text" id="lineName" placeholder="LINEグループでの名前" autocomplete="off">
-      <label class="f" for="email">メールアドレス</label>
-      <input type="email" id="email" placeholder="例：example@gmail.com" autocomplete="email" inputmode="email">
-      <p class="hint">メールアドレスを入れると、あなたが申し込んだ日がカレンダーで色づきます。</p>
-    </fieldset>
+function App() {
+    const [currentTab, setCurrentTab] = useState('profile');
+    const [profile, setProfile] = useState(() => {
+        const saved = localStorage.getItem('invoice_app_profile_v1');
+        const defaults = {
+            name: '', zip: '', address: '', tel: '', invoiceNo: '',
+            bankName: '', bankCode: '', branchName: '', branchCode: '',
+            bankType: '普通', bankNumber: '', bankHolder: ''
+        };
+        return saved ? {...defaults, ...JSON.parse(saved)} : defaults;
+    });
+    const [profileSaved, setProfileSaved] = useState(false);
+    const [zipStatus, setZipStatus] = useState('');
+    const [records, setRecords] = useState(() => {
+        const saved = localStorage.getItem('invoice_app_records_v1');
+        return saved ? JSON.parse(saved) : [];
+    });
+    const [selectedMonth, setSelectedMonth] = useState(() => {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    });
+    const [form, setForm] = useState({
+        date: new Date().toISOString().slice(0, 10),
+        label: '',
+        amount: '',
+        separate: false
+    });
+    const [isSuccess, setIsSuccess] = useState(false);
+    const [confirmDialog, setConfirmDialog] = useState(null);
 
-    <fieldset>
-      <legend>参加希望日</legend>
-      <p class="hint" id="pickHint"></p>
-      <div class="cal">
-        <div class="calhead">
-          <button type="button" class="nav" id="prev" aria-label="前の月">‹</button>
-          <b id="calTitle"></b>
-          <button type="button" class="nav" id="next" aria-label="次の月">›</button>
+    useEffect(() => {
+        localStorage.setItem('invoice_app_profile_v1', JSON.stringify(profile));
+    }, [profile]);
+
+    useEffect(() => {
+        localStorage.setItem('invoice_app_records_v1', JSON.stringify(records));
+    }, [records]);
+
+    const filtered = useMemo(() => {
+        return records
+            .filter(r => r.date.startsWith(selectedMonth))
+            .sort((a, b) => new Date(a.date) - new Date(b.date));
+    }, [records, selectedMonth]);
+
+    const totalAmount = useMemo(() => {
+        return filtered.reduce((s, r) => s + (r.amount || 0), 0);
+    }, [filtered]);
+
+    const handleSave = () => {
+        if (!form.label || !form.amount) return;
+        const newRecord = {
+            id: Date.now(),
+            date: form.date,
+            label: form.label,
+            amount: parseInt(form.amount) || 0,
+            separate: form.separate,
+            registeredAt: new Date().toLocaleString('ja-JP')
+        };
+        setRecords(prev => [newRecord, ...prev]);
+        setForm(f => ({...f, label: '', amount: '', separate: false}));
+        setIsSuccess(true);
+        setTimeout(() => setIsSuccess(false), 2000);
+    };
+
+    const handleDelete = (id) => {
+        setRecords(prev => prev.filter(r => r.id !== id));
+    };
+
+    const handleSaveProfile = () => {
+        setProfileSaved(true);
+        setTimeout(() => setProfileSaved(false), 2000);
+    };
+
+    const handleZipSearch = async () => {
+        const raw = profile.zip.replace(/-/g, '');
+        if (raw.length !== 7) return;
+        setZipStatus('loading');
+        try {
+            const res = await fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${raw}`);
+            const data = await res.json();
+            if (data.results) {
+                const r = data.results[0];
+                setProfile(p => ({...p, address: r.address1 + r.address2 + r.address3}));
+                setZipStatus('ok');
+            } else setZipStatus('err');
+        } catch { setZipStatus('err'); }
+        setTimeout(() => setZipStatus(''), 3000);
+    };
+
+    // 請求書用データ計算
+    const mainTotal = filtered.filter(r => !r.separate).reduce((s, r) => s + (r.amount || 0), 0);
+    const separateItems = filtered.filter(r => r.separate);
+    const mainSubTotal = Math.round(mainTotal / 1.1);
+    const grandSubTotal = Math.round(totalAmount / 1.1);
+    const grandTax = totalAmount - grandSubTotal;
+
+    const tabs = [
+        { id: 'profile', label: '登録', icon: '👤' },
+        { id: 'input', label: '入力', icon: '✏️' },
+        { id: 'history', label: '履歴', icon: '📋' },
+        { id: 'invoice', label: '請求書', icon: '📄' },
+    ];
+
+    return (
+        <div style={{maxWidth: '680px', margin: '0 auto', minHeight: '100vh', background: 'var(--blue-bg)'}}>
+            {/* ヘッダー */}
+            <header className="no-print" style={{background: 'linear-gradient(135deg, #4a7cc9, #7aaee0)', padding: '16px 20px', position: 'sticky', top: 0, zIndex: 20, boxShadow: '0 2px 12px rgba(74,124,201,0.3)'}}>
+                <div style={{fontWeight: '900', fontSize: '18px', color: 'white'}}>請求書作成アプリ</div>
+                {profile.name && <div style={{fontSize: '11px', color: 'rgba(255,255,255,0.75)', marginTop: '2px'}}>{profile.name} さん</div>}
+            </header>
+
+            {/* コンテンツ */}
+            <div style={{padding: '16px', paddingBottom: '90px'}}>
+
+                {/* ===== 登録タブ ===== */}
+                {currentTab === 'profile' && (
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
+                        <div style={{background: 'white', borderRadius: '20px', padding: '24px', boxShadow: '0 2px 12px rgba(74,124,201,0.08)'}}>
+                            <div style={{fontSize: '11px', fontWeight: '700', color: 'var(--blue)', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em'}}>個人情報</div>
+                            <div style={{display: 'flex', flexDirection: 'column', gap: '14px'}}>
+                                <div>
+                                    <label style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '6px'}}>氏名・屋号 <span style={{color: '#e05050'}}>＊</span></label>
+                                    <input style={inputStyle} value={profile.name} onChange={e => setProfile({...profile, name: e.target.value})} placeholder="例：山田 花子" />
+                                </div>
+                                <div>
+                                    <label style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '6px'}}>郵便番号 <span style={{color: '#e05050'}}>＊</span></label>
+                                    <div style={{display: 'flex', gap: '8px'}}>
+                                        <input style={{...inputStyle, flex: 1}} value={profile.zip} onChange={e => setProfile({...profile, zip: e.target.value})} placeholder="1234567" maxLength="8" />
+                                        <button onClick={handleZipSearch} style={{background: 'var(--blue)', color: 'white', border: 'none', borderRadius: '12px', padding: '0 14px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', flexShrink: 0}}>
+                                            {zipStatus === 'loading' ? '検索中' : zipStatus === 'ok' ? '✓ OK' : zipStatus === 'err' ? '❌' : '住所検索'}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '6px'}}>住所 <span style={{color: '#e05050'}}>＊</span></label>
+                                    <input style={inputStyle} value={profile.address} onChange={e => setProfile({...profile, address: e.target.value})} placeholder="番地・建物名まで" />
+                                </div>
+                                <div>
+                                    <label style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '6px'}}>電話番号 <span style={{color: '#e05050'}}>＊</span></label>
+                                    <input style={inputStyle} type="tel" value={profile.tel} onChange={e => setProfile({...profile, tel: e.target.value})} placeholder="090-1234-5678" />
+                                </div>
+                                <div>
+                                    <label style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '6px'}}>インボイス登録番号（任意）</label>
+                                    <input style={{...inputStyle, fontSize: '12px'}} value={profile.invoiceNo || ''} onChange={e => setProfile({...profile, invoiceNo: e.target.value})} placeholder="例：T1234567890123" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={{background: 'white', borderRadius: '20px', padding: '24px', boxShadow: '0 2px 12px rgba(74,124,201,0.08)'}}>
+                            <div style={{fontSize: '11px', fontWeight: '700', color: 'var(--blue)', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em'}}>振込先情報</div>
+                            <div style={{display: 'flex', flexDirection: 'column', gap: '14px'}}>
+                                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px'}}>
+                                    <div>
+                                        <label style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '6px'}}>銀行名 <span style={{color: '#e05050'}}>＊</span></label>
+                                        <input style={inputStyle} value={profile.bankName} onChange={e => setProfile({...profile, bankName: e.target.value})} placeholder="○○銀行" />
+                                    </div>
+                                    <div>
+                                        <label style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '6px'}}>銀行番号（任意）</label>
+                                        <input style={{...inputStyle, fontSize: '12px'}} value={profile.bankCode || ''} onChange={e => setProfile({...profile, bankCode: e.target.value})} placeholder="0000" />
+                                    </div>
+                                </div>
+                                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px'}}>
+                                    <div>
+                                        <label style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '6px'}}>支店名 <span style={{color: '#e05050'}}>＊</span></label>
+                                        <input style={inputStyle} value={profile.branchName} onChange={e => setProfile({...profile, branchName: e.target.value})} placeholder="○○支店" />
+                                    </div>
+                                    <div>
+                                        <label style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '6px'}}>支店番号（任意）</label>
+                                        <input style={{...inputStyle, fontSize: '12px'}} value={profile.branchCode || ''} onChange={e => setProfile({...profile, branchCode: e.target.value})} placeholder="000" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '6px'}}>口座種別 <span style={{color: '#e05050'}}>＊</span></label>
+                                    <select style={inputStyle} value={profile.bankType} onChange={e => setProfile({...profile, bankType: e.target.value})}>
+                                        <option>普通</option>
+                                        <option>当座</option>
+                                        <option>貯蓄</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '6px'}}>口座番号 <span style={{color: '#e05050'}}>＊</span></label>
+                                    <input style={inputStyle} value={profile.bankNumber} onChange={e => setProfile({...profile, bankNumber: e.target.value})} placeholder="1234567" />
+                                </div>
+                                <div>
+                                    <label style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '6px'}}>口座名義（カナ） <span style={{color: '#e05050'}}>＊</span></label>
+                                    <input style={inputStyle} value={profile.bankHolder} onChange={e => setProfile({...profile, bankHolder: e.target.value})} placeholder="ヤマダ ハナコ" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <button onClick={handleSaveProfile} style={{width: '100%', padding: '18px', borderRadius: '16px', border: 'none', fontWeight: '900', fontSize: '16px', color: 'white', cursor: 'pointer', background: profileSaved ? 'linear-gradient(135deg, #e07840, #f09060)' : 'linear-gradient(135deg, #4a7cc9, #7aaee0)', boxShadow: '0 4px 16px rgba(74,124,201,0.3)'}}>
+                            {profileSaved ? '✓ 保存しました' : '保存する'}
+                        </button>
+                    </div>
+                )}
+
+                {/* ===== 入力タブ ===== */}
+                {currentTab === 'input' && (
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
+                        <div style={{background: 'white', borderRadius: '20px', padding: '24px', boxShadow: '0 2px 12px rgba(74,124,201,0.08)'}}>
+                            <div style={{fontSize: '11px', fontWeight: '700', color: 'var(--blue)', marginBottom: '16px'}}>請求データ入力</div>
+                            <div style={{display: 'flex', flexDirection: 'column', gap: '14px'}}>
+                                <div>
+                                    <label style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '6px'}}>日付</label>
+                                    <input type="date" style={inputStyle} value={form.date} onChange={e => setForm({...form, date: e.target.value})} />
+                                </div>
+                                <div>
+                                    <label style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '6px'}}>金額（税込）</label>
+                                    <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                                        <span style={{fontWeight: '700', fontSize: '18px', color: 'var(--blue)'}}>¥</span>
+                                        <input type="number" style={inputStyle} value={form.amount} onChange={e => setForm({...form, amount: e.target.value})} placeholder="例：50000" min="0" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '6px'}}>項目（内容）</label>
+                                    <input type="text" style={inputStyle} value={form.label} onChange={e => setForm({...form, label: e.target.value})} placeholder="例：業務委託費、交通費など" />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 今回の入力確認 */}
+                        {form.amount && (
+                            <div style={{background: '#f0f8ff', borderRadius: '16px', padding: '16px 20px', border: '2px solid var(--blue-border)', textAlign: 'center'}}>
+                                <div style={{fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px'}}>今回の金額</div>
+                                <div style={{fontSize: '28px', fontWeight: '900', color: 'var(--blue)'}}>¥{(parseInt(form.amount)||0).toLocaleString()}</div>
+                                {form.label && <div style={{fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px'}}>{form.label}</div>}
+                            </div>
+                        )}
+
+                        <button onClick={handleSave} disabled={!form.label || !form.amount} style={{width: '100%', padding: '18px', borderRadius: '16px', border: 'none', fontWeight: '900', fontSize: '16px', color: 'white', cursor: 'pointer', background: isSuccess ? 'linear-gradient(135deg, #e07840, #f09060)' : (!form.label || !form.amount) ? '#c8d8f0' : 'linear-gradient(135deg, #4a7cc9, #7aaee0)', boxShadow: (!form.label || !form.amount) ? 'none' : '0 4px 16px rgba(74,124,201,0.3)'}}>
+                            {isSuccess ? '✓ 記録しました' : '記録する'}
+                        </button>
+                    </div>
+                )}
+
+                {/* ===== 履歴タブ ===== */}
+                {currentTab === 'history' && (
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
+                        <div style={{background: 'white', borderRadius: '16px', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '12px', boxShadow: '0 2px 8px rgba(74,124,201,0.08)'}}>
+                            <span style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', whiteSpace: 'nowrap'}}>表示月</span>
+                            <input type="month" style={{...inputStyle, padding: '8px 12px', fontSize: '13px', flex: 1}} value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} />
+                        </div>
+
+                        {filtered.length > 0 && (
+                            <div style={{padding: '0 4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                                <span style={{fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700'}}>{filtered.length}件</span>
+                                <span style={{fontSize: '14px', fontWeight: '900', color: 'var(--blue)'}}>合計 ¥{totalAmount.toLocaleString()}</span>
+                            </div>
+                        )}
+
+                        {filtered.length === 0 ? (
+                            <div style={{padding: '60px 20px', textAlign: 'center', background: 'white', borderRadius: '20px', color: 'var(--text-muted)'}}>データがありません</div>
+                        ) : filtered.map(r => (
+                            <div key={r.id} style={{background: 'white', borderRadius: '16px', padding: '16px 20px', boxShadow: '0 2px 8px rgba(74,124,201,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                                <div>
+                                    <div style={{fontSize: '13px', fontWeight: '700', color: 'var(--text)'}}>{r.label}</div>
+                                    <div style={{fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px'}}>{r.date}{r.separate ? ' · 別項目' : ''}</div>
+                                </div>
+                                <div style={{textAlign: 'right'}}>
+                                    <div style={{fontSize: '16px', fontWeight: '900', color: 'var(--blue)'}}>¥{r.amount.toLocaleString()}</div>
+                                    <button onClick={() => handleDelete(r.id)} style={{fontSize: '10px', color: '#aac4e8', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '700', marginTop: '2px'}}>削除</button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* ===== 請求書タブ ===== */}
+                {currentTab === 'invoice' && (
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
+                        <div className="no-print" style={{background: 'white', borderRadius: '16px', padding: '16px 20px', boxShadow: '0 2px 8px rgba(74,124,201,0.08)'}}>
+                                            <div style={{fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '8px'}}>対象月</div>
+                                            <input type="month" style={{...inputStyle, padding: '10px 14px'}} value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} />
+                                        </div>
+
+                        {filtered.length === 0 ? (
+                            <div style={{padding: '60px 20px', textAlign: 'center', background: 'white', borderRadius: '20px', color: 'var(--text-muted)'}}>この月のデータがありません</div>
+                        ) : (
+                            <>
+                                {/* 請求書プレビュー */}
+                                <div id="invoice-box" className="invoice-screen" style={{background: 'white', border: '1px solid #cccccc', padding: '40px 48px', boxShadow: '0 4px 24px rgba(0,0,0,0.08)', minHeight: '297mm', borderRadius: '4px'}}>
+                                    {/* タイトル */}
+                                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px'}}>
+                                        <div>
+                                            <div className="inv-title" style={{fontSize: '36px', fontWeight: '500', color: '#000'}}>請求書</div>
+                                            <div style={{fontSize: '12px', color: '#666', marginTop: '3px'}}>INVOICE</div>
+                                        </div>
+                                        <div style={{textAlign: 'right'}}>
+                                            <div style={{fontSize: '12px', color: '#666', marginBottom: '3px'}}>発行日</div>
+                                            <div style={{fontSize: '14px', fontWeight: '500'}}>{new Date().toLocaleDateString('ja-JP')}</div>
+                                        </div>
+                                    </div>
+                                    <hr style={{border: 'none', borderTop: '0.5px solid #ccc', margin: '16px 0'}} />
+
+                                    {/* 請求先・請求人 */}
+                                    <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '20px'}}>
+                                        <div>
+                                            <div style={{fontSize: '12px', color: '#666', marginBottom: '4px'}}>請求先</div>
+                                            <div className="inv-to-name" style={{fontSize: '20px', fontWeight: '500'}}>株式会社イジュン 御中</div>
+                                            <div className="inv-to-note" style={{fontSize: '13px', color: '#666', marginTop: '10px'}}>下記の通り、ご請求申し上げます。</div>
+                                        </div>
+                                        <div style={{textAlign: 'right'}}>
+                                            <div style={{fontSize: '12px', color: '#666', marginBottom: '4px'}}>請求人</div>
+                                            <div className="inv-from-name" style={{fontSize: '16px', fontWeight: '500'}}>{profile.name || '（未登録）'}</div>
+                                            {profile.zip && <div className="inv-from-detail" style={{fontSize: '13px', color: '#666'}}>〒{profile.zip}</div>}
+                                            {profile.address && <div className="inv-from-detail" style={{fontSize: '13px', color: '#666'}}>{profile.address}</div>}
+                                            {profile.tel && <div className="inv-from-detail" style={{fontSize: '13px', color: '#666'}}>TEL: {profile.tel}</div>}
+                                            {profile.invoiceNo && <div className="inv-from-detail" style={{fontSize: '13px', color: '#666'}}>登録番号: {profile.invoiceNo}</div>}
+                                        </div>
+                                    </div>
+
+                                    {/* ご請求金額 */}
+                                    <div style={{display: 'flex', alignItems: 'baseline', gap: '20px', padding: '14px 0 10px', marginTop: '8px'}}>
+                                        <span className="inv-req-label" style={{fontSize: '15px', fontWeight: '500'}}>ご請求金額（税込）</span>
+                                        <span className="inv-req-amt" style={{fontSize: '26px', fontWeight: '500', letterSpacing: '-0.5px'}}>¥{totalAmount.toLocaleString()}-</span>
+                                    </div>
+                                    <hr style={{border: 'none', borderTop: '2px solid #000', margin: '0 0 16px'}} />
+
+                                    {/* 明細テーブル */}
+                                    <table style={{width: '100%', borderCollapse: 'collapse', marginBottom: '8px'}}>
+                                        <thead>
+                                            <tr style={{borderBottom: '0.5px solid #ccc'}}>
+                                                <th style={{fontSize: '12px', color: '#666', fontWeight: '400', padding: '8px 4px', textAlign: 'left'}}>項目・内容</th>
+                                                <th style={{fontSize: '12px', color: '#666', fontWeight: '400', padding: '8px 4px', textAlign: 'right'}}>数量</th>
+                                                <th style={{fontSize: '12px', color: '#666', fontWeight: '400', padding: '8px 4px', textAlign: 'right'}}>単価（税抜）</th>
+                                                <th style={{fontSize: '12px', color: '#666', fontWeight: '400', padding: '8px 4px', textAlign: 'right'}}>金額（税込）</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {/* 運営協力費（別項目以外） */}
+                                            {filtered.filter(r => !r.separate).map((r, idx) => (
+                                                <tr key={idx} style={{borderBottom: '0.5px solid #ccc'}}>
+                                                    <td style={{padding: '16px 4px', fontWeight: '500', fontSize: '15px'}}>
+                                                        {r.label || ''}
+                                                    </td>
+                                                    <td style={{padding: '16px 4px', textAlign: 'right', color: '#666', fontSize: '15px'}}>1</td>
+                                                    <td style={{padding: '16px 4px', textAlign: 'right', color: '#666', fontSize: '15px'}}>¥{Math.round(r.amount / 1.1).toLocaleString()}</td>
+                                                    <td style={{padding: '16px 4px', textAlign: 'right', fontWeight: '500', fontSize: '15px'}}>¥{r.amount.toLocaleString()}</td>
+                                                </tr>
+                                            ))}
+                                            {/* 別項目 */}
+                                            {separateItems.map((r, idx) => (
+                                                <tr key={idx} style={{borderBottom: '0.5px solid #ccc'}}>
+                                                    <td style={{padding: '16px 4px', fontWeight: '500', fontSize: '15px'}}>{r.label}</td>
+                                                    <td style={{padding: '16px 4px', textAlign: 'right', color: '#666', fontSize: '15px'}}>1</td>
+                                                    <td style={{padding: '16px 4px', textAlign: 'right', color: '#666', fontSize: '15px'}}>¥{Math.round(r.amount / 1.1).toLocaleString()}</td>
+                                                    <td style={{padding: '16px 4px', textAlign: 'right', fontWeight: '500', fontSize: '15px'}}>¥{r.amount.toLocaleString()}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+
+                                    {/* 小計・消費税・合計 */}
+                                    <div className="inv-summary-row" style={{display: 'flex', justifyContent: 'flex-end', margin: '8px 0 20px'}}>
+                                        <div style={{width: '220px'}}>
+                                            <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#666', padding: '4px 0'}}>
+                                                <span>小計（税抜）</span><span>¥{grandSubTotal.toLocaleString()}</span>
+                                            </div>
+                                            <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#666', padding: '4px 0'}}>
+                                                <span>消費税（10%）</span><span>¥{grandTax.toLocaleString()}</span>
+                                            </div>
+                                            <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '15px', fontWeight: '500', borderTop: '0.5px solid #ccc', padding: '10px 0', marginTop: '4px'}}>
+                                                <span>合計（税込）</span><span>¥{totalAmount.toLocaleString()}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 振込先 */}
+                                    {(profile.bankName || profile.bankNumber) && (
+                                        <div style={{borderTop: '0.5px solid #ccc', borderBottom: '0.5px solid #ccc', padding: '14px 0', margin: '16px 0'}}>
+                                            <div className="inv-bank-note" style={{fontSize: '12px', color: '#666', marginBottom: '10px'}}>お手数ですが下記口座へお振り込みをお願い申し上げます。</div>
+                                            <div className="inv-bank-grid" style={{display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '5px 16px', fontSize: '13px'}}>
+                                                {profile.bankName && <><span style={{color: '#666'}}>銀行名</span><span style={{fontWeight: '500'}}>{profile.bankName}{profile.bankCode ? `（${profile.bankCode}）` : ''}</span></>}
+                                                {profile.branchName && <><span style={{color: '#666'}}>支店名</span><span style={{fontWeight: '500'}}>{profile.branchName}{profile.branchCode ? `（${profile.branchCode}）` : ''}</span></>}
+                                                {profile.bankType && <><span style={{color: '#666'}}>口座種別</span><span style={{fontWeight: '500'}}>{profile.bankType}</span></>}
+                                                {profile.bankNumber && <><span style={{color: '#666'}}>口座番号</span><span style={{fontWeight: '500'}}>{profile.bankNumber}</span></>}
+                                                {profile.bankHolder && <><span style={{color: '#666'}}>口座名義</span><span style={{fontWeight: '500'}}>{profile.bankHolder}</span></>}
+                                            </div>
+                                            <div style={{fontSize: '10px', color: '#888', marginTop: '10px'}}>※振込手数料につきましては御社のご負担にてお願い致します。</div>
+                                        </div>
+                                    )}
+
+                                    <div className="inv-footer" style={{textAlign: 'center', fontSize: '12px', color: '#666', marginTop: '16px'}}>
+                                    </div>
+                                </div>
+
+                                {/* PDFボタン */}
+                                <button className="no-print" onClick={() => window.print()} style={{width: '100%', padding: '18px', borderRadius: '16px', border: 'none', fontWeight: '900', fontSize: '16px', color: 'white', cursor: 'pointer', background: 'linear-gradient(135deg, #4a7cc9, #7aaee0)', boxShadow: '0 4px 16px rgba(74,124,201,0.3)'}}>
+                                    📄 PDFを出す / LINEで送る
+                                </button>
+                            </>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* モバイルナビ */}
+            <div className="no-print" style={{position: 'fixed', bottom: 0, left: 0, right: 0, background: 'rgba(255,255,255,0.97)', borderTop: '1px solid var(--blue-border)', zIndex: 40, backdropFilter: 'blur(12px)'}}>
+                <div style={{display: 'flex', maxWidth: '680px', margin: '0 auto'}}>
+                    {tabs.map(t => (
+                        <button key={t.id} onClick={() => setCurrentTab(t.id)} style={{flex: 1, padding: '10px 0 12px', border: 'none', background: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px'}}>
+                            <span style={{fontSize: '20px'}}>{t.icon}</span>
+                            <span style={{fontSize: '10px', fontWeight: '700', color: currentTab === t.id ? 'var(--blue)' : '#aac4e8'}}>{t.label}</span>
+                        </button>
+                    ))}
+                </div>
+                <div style={{textAlign: 'left', paddingBottom: '4px', paddingLeft: '12px'}}>
+                    <span style={{fontSize: '9px', color: '#c0cfe8'}}>© 2026 依光智子</span>
+                </div>
+            </div>
         </div>
-        <div class="grid" id="wdrow"></div>
-        <div class="grid" id="cal" style="margin-top:4px"></div>
-        <div class="legend">
-          <span><i style="background:var(--sun)"></i>申込済（自分）</span>
-          <span><i style="background:var(--gray)"></i>定休日</span>
-          <span>数字＝申込人数</span>
-        </div>
-        <p class="calnote" id="calNote" aria-live="polite"></p>
-      </div>
-    </fieldset>
-
-    <div class="mine-box hidden" id="mineBox">
-      <h2>あなたの申し込み</h2>
-      <div id="mineList"></div>
-    </div>
-
-    <fieldset>
-      <legend>到着時刻と帰る時刻</legend>
-      <p class="hint">2日以上のときは、はじめの日の到着時刻と、さいごの日に帰る時刻を選んでください。</p>
-      <div class="times">
-        <div><label for="from">到着時刻</label><select id="from"></select></div>
-        <div><label for="to">帰る時刻</label><select id="to"></select></div>
-      </div>
-    </fieldset>
-
-    <fieldset>
-      <legend>まかない</legend>
-      <div class="meal">
-        <label><input type="radio" name="meal" value="あり"><span class="opt">まかない有り（300円）</span></label>
-        <label><input type="radio" name="meal" value="なし"><span class="opt">まかない無し</span></label>
-      </div>
-      <div id="mealDaysBox" class="hidden">
-        <p class="hint" style="margin:12px 0 0">まかないを食べない日は、チェックをはずしてください。（初日や最後の日だけいらないとき）</p>
-        <div class="chips" id="mealDays"></div>
-      </div>
-    </fieldset>
-
-    <div class="when" id="when" aria-live="polite"></div>
-    <div class="price" id="price" aria-live="polite"></div>
-
-    <p class="err" id="err" role="alert"></p>
-    <button type="submit" class="go" id="submitBtn">この内容で申し込む（メールを送る）</button>
-    <div class="linkrow"><button type="button" id="toAdmin">管理人用</button></div>
-  </form>
-</div>
-
-<!-- ============ 完了画面 ============ -->
-<div class="wrap hidden" id="view-done">
-  <section class="done">
-    <div class="mark" aria-hidden="true">✓</div>
-    <h1 id="doneTitle">お申込みありがとうございます。</h1>
-    <p class="lead" id="doneLead"></p>
-    <dl class="card" id="card"></dl>
-    <button class="ghost" id="again" type="button">カレンダーにもどる</button>
-  </section>
-</div>
-
-<!-- ============ 管理人画面 ============ -->
-<div class="wrap wide hidden" id="view-admin">
-  <div class="no-print">
-    <p class="brand">サポーターズサイト</p>
-    <h1>管理人用：月ごとの一覧</h1>
-    <p class="lead">月を選んで「読み込む」→「PDFにする」で、その月の一覧をPDFで保存できます。</p>
-    <div class="ctrl">
-      <input type="password" id="key" placeholder="管理人パスコード" aria-label="管理人パスコード" autocomplete="off">
-      <div class="row">
-        <input type="month" id="month" aria-label="月">
-        <button type="button" class="small" id="load">読み込む</button>
-      </div>
-    </div>
-    <p class="err" id="adminErr" role="alert"></p>
-  </div>
-
-  <div class="report hidden" id="report">
-    <h2 id="reportTitle"></h2>
-    <div class="stats" id="stats"></div>
-    <table>
-      <thead><tr><th>期間</th><th>到着〜帰る</th><th>お名前（本名）</th><th>LINE表示名</th><th>まかない</th><th class="num">当月日数</th><th class="num">金額</th></tr></thead>
-      <tbody id="rows"></tbody>
-    </table>
-    <p class="note">ボランティア1日500円・まかない1食300円。金額はこの月の分です。お支払いは現地です。</p>
-  </div>
-
-  <div class="no-print">
-    <button type="button" class="go hidden" id="printBtn" style="margin-top:16px">PDFにする</button>
-    <p class="note hidden" id="printNote">開いた画面で「PDFに保存」を選んでください。</p>
-    <button type="button" class="ghost" id="backApply">申込画面にもどる</button>
-  </div>
-</div>
-
-<script>
-/* ===== 設定 ===== */
-const GAS_URL = "https://script.google.com/macros/s/AKfycbziAhPPUy7tKaV2VOo6mB-cZm5TOSbtCjf4uxdCuBjqk5BZjZVLTInMABeux-B7_jlDMw/exec";
-const ADMIN_EMAIL = "leivillagecrew@gmail.com";
-const FEE_VOLUNTEER = 500;   // 1日あたり
-const FEE_MEAL = 300;        // 1日あたり
-const CLOSED = [1, 4];       // 定休日の曜日（0=日,1=月,2=火,3=水,4=木,5=金,6=土）
-const MAX_SPAN = 31;         // 続けて申し込める最大日数
-
-const WD = ["日","月","火","水","木","金","土"];
-const $ = id => document.getElementById(id);
-const pad = n => String(n).padStart(2, "0");
-const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const yen = n => Number(n).toLocaleString("ja-JP") + "円";
-const val = n => (document.querySelector(`input[name="${n}"]:checked`) || {}).value;
-const mins = s => { const [h, m] = s.split(":").map(Number); return h * 60 + m; };
-const isoOf = (y, m0, d) => `${y}-${pad(m0 + 1)}-${pad(d)}`;
-const parse = iso => { const [y, m, d] = iso.split("-").map(Number); return new Date(y, m - 1, d); };
-const labelOf = iso => { const d = parse(iso); return `${d.getMonth() + 1}月${d.getDate()}日（${WD[d.getDay()]}）`; };
-const rangeLabel = (a, b) => a === b ? labelOf(a) : `${labelOf(a)}〜${labelOf(b)}`;
-const isClosed = iso => CLOSED.includes(parse(iso).getDay());
-const emailOk = s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
-
-function spanDays(a, b) { return Math.round((parse(b) - parse(a)) / 86400000) + 1; }
-function openDays(a, b) {
-  const out = [], start = parse(a), n = spanDays(a, b);
-  for (let i = 0; i < n; i++) {
-    const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
-    const iso = isoOf(d.getFullYear(), d.getMonth(), d.getDate());
-    if (!isClosed(iso)) out.push(iso);
-  }
-  return out;
-}
-function totalOf(days, mealN) { return days * FEE_VOLUNTEER + mealN * FEE_MEAL; }
-function mealLabel(meal, dayList, mealDays) {
-  if (meal !== "あり") return "まかない無し";
-  const md = mealDays || [];
-  let t = `まかない有り（${md.length}食）`;
-  const skip = dayList.filter(d => !md.includes(d));
-  if (skip.length) t += `　食べない日：${skip.map(labelOf).join("、")}`;
-  return t;
+    );
 }
 
-/* ===== 状態 ===== */
-const now = new Date();
-const todayISO = isoOf(now.getFullYear(), now.getMonth(), now.getDate());
-const view = { y: now.getFullYear(), m: now.getMonth() };
-let selStart = null, selEnd = null, phase = 0;   // phase 0:未選択 1:はじめの日を選んだ 2:期間を選んだ
-let counts = {}, mine = new Set(), myApps = [];
-let mealOff = new Set();   // まかないを食べない日
-let loadSeq = 0;
-
-/* ===== 時間 ===== */
-for (let h = 7; h <= 21; h++) for (const m of [0, 30]) {
-  if (h === 21 && m) continue;
-  const s = `${h}:${m ? "30" : "00"}`;
-  $("from").add(new Option(s, s));
-  $("to").add(new Option(s, s));
-}
-$("from").value = "10:00"; $("to").value = "15:00";
-
-/* ===== カレンダー ===== */
-$("wdrow").innerHTML = ["月","火","水","木","金","土","日"]
-  .map((w, i) => `<span class="wd ${i === 5 ? "sat" : i === 6 ? "sun" : ""}">${w}</span>`).join("");
-
-function renderCal() {
-  const { y, m } = view;
-  $("calTitle").textContent = `${y}年${m + 1}月`;
-  const lead = (new Date(y, m, 1).getDay() + 6) % 7;   // 月曜はじまり
-  const nDays = new Date(y, m + 1, 0).getDate();
-  let html = "";
-  for (let i = 0; i < lead; i++) html += "<span></span>";
-  for (let d = 1; d <= nDays; d++) {
-    const id = isoOf(y, m, d);
-    const closed = isClosed(id), past = id < todayISO, isMine = mine.has(id);
-    const inSel = !!selStart && id >= selStart && id <= selEnd && !closed;
-    const n = counts[id] || 0;
-    const cls = ["day"];
-    if (closed) cls.push("closed"); else if (past) cls.push("past");
-    if (isMine) cls.push("mine");
-    if (inSel) cls.push("sel");
-    if (n) cls.push("has");
-    if (id === todayISO) cls.push("today");
-    const sub = closed ? "休" : past ? "" : isMine ? `✓${n}人` : n ? `${n}人` : "";
-    const disabled = closed || past || isMine;
-    const aria = `${labelOf(id)}${closed ? " 定休日" : ""}${n ? ` ${n}人申込` : ""}${isMine ? " 申込済（自分）" : ""}`;
-    html += `<button type="button" class="${cls.join(" ")}" data-iso="${id}" aria-label="${aria}"${disabled ? " disabled" : ""}>${d}<small>${sub}</small></button>`;
-  }
-  $("cal").innerHTML = html;
-  const curIdx = now.getFullYear() * 12 + now.getMonth(), viewIdx = y * 12 + m;
-  $("prev").disabled = viewIdx <= curIdx;
-  $("next").disabled = viewIdx >= curIdx + 5;
-}
-
-$("prev").addEventListener("click", () => shiftMonth(-1));
-$("next").addEventListener("click", () => shiftMonth(1));
-function shiftMonth(delta) {
-  const d = new Date(view.y, view.m + delta, 1);
-  view.y = d.getFullYear(); view.m = d.getMonth();
-  counts = {}; mine = new Set();
-  renderCal(); loadMonth();
-}
-
-$("cal").addEventListener("click", e => {
-  const b = e.target.closest("button.day");
-  if (!b || b.disabled) return;
-  pick(b.dataset.iso);
-});
-
-function pick(id) {
-  $("err").textContent = "";
-  mealOff = new Set();
-  if (phase === 1 && id >= selStart) {
-    if (spanDays(selStart, id) > MAX_SPAN) return $("err").textContent = `続けて申し込めるのは${MAX_SPAN}日までです`;
-    selEnd = id; phase = 2;
-  } else if (phase === 1) {
-    selStart = selEnd = id;                // 前の日を選びなおした
-  } else {
-    selStart = selEnd = id; phase = 1;
-  }
-  renderCal(); refresh();
-}
-
-/* ===== 内容・料金の表示 ===== */
-function refresh() {
-  const meal = val("meal");
-  $("pickHint").textContent =
-    phase === 0 ? "はじめの日をタップしてください。" :
-    phase === 1 ? "1日だけなら、このまま下へ。2日以上なら、さいごの日をタップしてください。" :
-                  "選びなおすときは、もう一度はじめの日をタップしてください。";
-  if (!selStart) {
-    $("mealDaysBox").classList.add("hidden");
-    $("when").textContent = "カレンダーで日にちを選んでください";
-    $("price").innerHTML = `<p>日にちとまかないを選ぶと、合計金額が表示されます。</p>`;
-    return;
-  }
-  const dayList = openDays(selStart, selEnd);
-  const days = dayList.length;
-  const skipped = spanDays(selStart, selEnd) - days;
-  const mealDays = meal === "あり" ? dayList.filter(d => !mealOff.has(d)) : [];
-
-  const showChips = meal === "あり" && days > 1;
-  $("mealDaysBox").classList.toggle("hidden", !showChips);
-  if (showChips) {
-    $("mealDays").innerHTML = dayList.map(d =>
-      `<label class="chk"><input type="checkbox" value="${d}"${mealOff.has(d) ? "" : " checked"}><span>${labelOf(d)}</span></label>`
-    ).join("");
-  }
-
-  $("when").innerHTML = `<strong>${rangeLabel(selStart, selEnd)}</strong>　${days}日間` +
-    (skipped ? `（定休日${skipped}日は除きます）` : "");
-  let html = `<div><span>ボランティア ${yen(FEE_VOLUNTEER)}×${days}日</span><span>${yen(FEE_VOLUNTEER * days)}</span></div>`;
-  if (meal === "あり") {
-    html += `<div><span>まかない ${yen(FEE_MEAL)}×${mealDays.length}食</span><span>${yen(FEE_MEAL * mealDays.length)}</span></div>`;
-  } else if (meal === "なし") {
-    html += `<div><span>まかない（なし）</span><span>0円</span></div>`;
-  }
-  if (meal) {
-    html += `<div class="total"><span>合計</span><span>${yen(totalOf(days, mealDays.length))}</span></div><p>現地でお支払いください。</p>`;
-  } else {
-    html += `<p>まかないの有り・無しを選ぶと、合計金額が表示されます。</p>`;
-  }
-  $("price").innerHTML = html;
-}
-$("mealDays").addEventListener("change", e => {
-  const cb = e.target;
-  if (!cb || cb.type !== "checkbox") return;
-  if (cb.checked) mealOff.delete(cb.value); else mealOff.add(cb.value);
-  refresh();
-});
-$("form").addEventListener("change", refresh);
-$("form").addEventListener("input", () => { $("err").textContent = ""; });
-
-/* ===== 画面切り替え ===== */
-function show(v) {
-  ["apply", "done", "admin"].forEach(n => $("view-" + n).classList.toggle("hidden", n !== v));
-  window.scrollTo(0, 0);
-}
-
-/* ===== 人数・自分の申し込みを読み込む ===== */
-async function post(payload) {
-  const res = await fetch(GAS_URL, {
-    method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload)
-  });
-  return res.json();
-}
-
-async function loadMonth() {
-  if (!GAS_URL) { $("calNote").textContent = "人数の表示には、Googleとのつなぎ込みが必要です。"; return; }
-  const seq = ++loadSeq;
-  const month = `${view.y}-${pad(view.m + 1)}`;
-  const email = $("email").value.trim();
-  $("calNote").textContent = "人数を読み込み中…";
-  try {
-    const data = await post({ action: "calendar", month, email: emailOk(email) ? email : "" });
-    if (seq !== loadSeq) return;
-    if (!data.ok) throw new Error();
-    counts = data.counts || {};
-    mine = new Set(data.mine || []);
-    myApps = data.myApps || [];
-    $("calNote").textContent = "";
-  } catch (e) {
-    if (seq !== loadSeq) return;
-    $("calNote").textContent = "人数を読み込めませんでした。少し待って、もう一度ひらいてください。";
-  }
-  renderCal(); renderMine();
-}
-
-function renderMine() {
-  const has = myApps.length > 0;
-  $("mineBox").classList.toggle("hidden", !has);
-  $("mineList").innerHTML = myApps.map(a =>
-    `<div class="app"><b>${rangeLabel(a.start, a.end)}</b>（${esc(a.days)}日）<br>` +
-    `到着${esc(a.from)}・帰る${esc(a.to)}　${a.meal === "あり" ? "まかない" + esc(a.mealN) + "食" : "まかない無し"}　${yen(a.total)}</div>`
-  ).join("");
-}
-
-/* 名前・メールをこの端末に覚えておく */
-function saveMe() { try { localStorage.setItem("ss_me", JSON.stringify({ n: $("name").value, l: $("lineName").value, e: $("email").value })); } catch (e) {} }
-function restoreMe() {
-  try {
-    const me = JSON.parse(localStorage.getItem("ss_me") || "null");
-    if (me) { $("name").value = me.n || ""; $("lineName").value = me.l || ""; $("email").value = me.e || ""; }
-  } catch (e) {}
-}
-$("email").addEventListener("change", () => { saveMe(); loadMonth(); });
-$("name").addEventListener("change", saveMe);
-$("lineName").addEventListener("change", saveMe);
-
-/* ===== 申し込み ===== */
-function buildBody(p) {
-  const days = openDays(p.start, p.end).length;
-  return [
-    "サポーターズサイトに申し込みがありました。",
-    "",
-    `【お名前（本名）】${p.name}`,
-    `【LINE表示名】${p.lineName}`,
-    `【メール】${p.email}`,
-    `【日にち】${rangeLabel(p.start, p.end)}（${days}日間）`,
-    `【到着時刻】${p.from}`,
-    `【帰る時刻】${p.to}`,
-    `【まかない】${mealLabel(p.meal, openDays(p.start, p.end), p.mealDays)}`,
-    `【ボランティア】${yen(FEE_VOLUNTEER)}×${days}日`,
-    `【合計】${yen(p.total)}（現地でお支払いください）`
-  ].join("\n");
-}
-
-function showDone(p, viaMail) {
-  const days = openDays(p.start, p.end).length;
-  $("doneTitle").textContent = viaMail ? "メールを送ってください" : "お申込みありがとうございます。";
-  $("doneLead").textContent = viaMail
-    ? "メールアプリが開きます。内容を確認して「送信」を押すと申し込み完了です。"
-    : "申し込み内容を、管理人とあなたのメールに送りました。カレンダーでもいつでも確認できます。";
-  $("card").innerHTML = [
-    ["お名前（本名）", p.name], ["LINE表示名", p.lineName], ["メール", p.email], ["日にち", `${rangeLabel(p.start, p.end)}（${days}日間）`],
-    ["到着時刻", p.from], ["帰る時刻", p.to], ["まかない", mealLabel(p.meal, openDays(p.start, p.end), p.mealDays)],
-    ["合計", yen(p.total) + "（現地払い）"]
-  ].map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join("");
-  show("done");
-}
-
-$("form").addEventListener("submit", async e => {
-  e.preventDefault();
-  const p = {
-    action: "apply",
-    name: $("name").value.trim(), lineName: $("lineName").value.trim(), email: $("email").value.trim(),
-    start: selStart, end: selEnd, from: $("from").value, to: $("to").value, meal: val("meal")
-  };
-  if (!p.name) return $("err").textContent = "お名前（本名）を入力してください";
-  if (!p.lineName) return $("err").textContent = "LINE表示名を入力してください";
-  if (!emailOk(p.email)) return $("err").textContent = "メールアドレスを正しく入力してください";
-  if (!p.start) return $("err").textContent = "カレンダーで参加希望日を選んでください";
-  const days = openDays(p.start, p.end);
-  if (days.some(d => mine.has(d))) return $("err").textContent = "すでに申し込み済みの日が入っています。日にちを選びなおしてください";
-  if (p.start === p.end && mins(p.to) <= mins(p.from)) return $("err").textContent = "帰る時刻は、到着時刻より後にしてください";
-  if (!p.meal) return $("err").textContent = "まかないの有り・無しを選んでください";
-  p.mealDays = p.meal === "あり" ? days.filter(d => !mealOff.has(d)) : [];
-  if (p.meal === "あり" && !p.mealDays.length) return $("err").textContent = "まかない有りのときは、食べる日を1日以上チェックしてください";
-  p.total = totalOf(days.length, p.mealDays.length);
-  saveMe();
-
-  if (!GAS_URL) {
-    const subject = `【サポーターズサイト】${rangeLabel(p.start, p.end)} ${p.name}（LINE：${p.lineName}）`;
-    location.href = `mailto:${ADMIN_EMAIL}?cc=${encodeURIComponent(p.email)}` +
-      `&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(buildBody(p))}`;
-    return showDone(p, true);
-  }
-
-  const btn = $("submitBtn");
-  btn.disabled = true; btn.textContent = "送信中…";
-  try {
-    const data = await post(p);
-    if (!data.ok) {
-      $("err").textContent =
-        data.error === "duplicate" ? "すでに申し込み済みの日が入っています。日にちを選びなおしてください" :
-        data.error === "closed" ? "定休日は選べません。日にちを選びなおしてください" :
-        data.error === "past" ? "過ぎた日は選べません" :
-        "送信できませんでした。入力内容を確認してください";
-      return;
-    }
-    showDone(p, false);
-    selStart = selEnd = null; phase = 0; mealOff = new Set();
-    loadMonth(); refresh();
-  } catch (err) {
-    $("err").textContent = "送信できませんでした。通信を確認して、もう一度押してください。";
-  } finally {
-    btn.disabled = false; btn.textContent = "この内容で申し込む（メールを送る）";
-  }
-});
-
-$("again").addEventListener("click", () => { renderCal(); refresh(); show("apply"); });
-
-/* ===== 管理人画面 ===== */
-$("toAdmin").addEventListener("click", () => {
-  if (!$("month").value) $("month").value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
-  show("admin");
-});
-$("backApply").addEventListener("click", () => show("apply"));
-
-$("load").addEventListener("click", async () => {
-  const err = $("adminErr"); err.textContent = "";
-  if (!GAS_URL) return err.textContent = "Googleとのつなぎ込み（GAS_URL）がまだなので、一覧は読み込めません。";
-  if (!$("key").value) return err.textContent = "パスコードを入力してください";
-  if (!$("month").value) return err.textContent = "月を選んでください";
-  $("load").disabled = true; $("load").textContent = "読み込み中…";
-  try {
-    const data = await post({ action: "list", month: $("month").value, key: $("key").value });
-    if (!data.ok) throw new Error(data.error || "");
-    renderReport($("month").value, data.rows);
-  } catch (e) {
-    err.textContent = e.message === "unauthorized" ? "パスコードが違います" : "読み込めませんでした。もう一度お試しください。";
-  } finally {
-    $("load").disabled = false; $("load").textContent = "読み込む";
-  }
-});
-
-function renderReport(month, rows) {
-  rows.sort((a, b) => (a.start + a.from).localeCompare(b.start + b.from, "ja", { numeric: true }));
-  const [y, m] = month.split("-").map(Number);
-  $("reportTitle").textContent = `サポーターズサイト　${y}年${m}月 参加者一覧`;
-  const dayTotal = rows.reduce((s, r) => s + Number(r.days || 0), 0);
-  const mealDays = rows.reduce((s, r) => s + Number(r.mealN || 0), 0);
-  const sum = rows.reduce((s, r) => s + Number(r.total || 0), 0);
-  $("stats").innerHTML =
-    `<span>申込 <b>${rows.length}</b>件</span><span>延べ <b>${dayTotal}</b>日</span>` +
-    `<span>まかない <b>${mealDays}</b>食</span><span>合計 <b>${yen(sum)}</b></span>`;
-  $("rows").innerHTML = rows.length
-    ? rows.map(r => `<tr><td>${rangeLabel(r.start, r.end)}</td><td>${esc(r.from)}〜${esc(r.to)}</td><td>${esc(r.name)}</td><td>${esc(r.line || "")}</td>` +
-        `<td>${r.mealN ? esc(r.mealN) + "食" : "無し"}</td><td class="num">${esc(r.days)}日</td><td class="num">${yen(r.total)}</td></tr>`).join("")
-    : `<tr><td colspan="7">この月の申し込みはありません</td></tr>`;
-  $("report").classList.remove("hidden");
-  $("printBtn").classList.remove("hidden");
-  $("printNote").classList.remove("hidden");
-}
-$("printBtn").addEventListener("click", () => window.print());
-
-/* ===== 起動 ===== */
-restoreMe();
-renderCal(); refresh(); renderMine();
-loadMonth();
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 </script>
 </body>
 </html>
